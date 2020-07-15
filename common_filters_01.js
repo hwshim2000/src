@@ -1,10 +1,32 @@
+$(function() {
+	if (typeof Filters != "undefined") {
+		//var hintStyle = 'color: rgba(255,0,0,0.5); font-style:oblique;';
+		var hintStyle = 'color: #cccccc; font-style:oblique;';
+		$("head").append('<style>'
+					+ '::-webkit-input-placeholder { /* Edge */'
+					+ hintStyle
+					+ '}'
+					+ ':-ms-input-placeholder { /* Internet Explorer 10-11 */'
+					+ hintStyle
+					+ '}'
+					+ '::placeholder {'
+					+ hintStyle
+					+ '}'
+					+ '</style>');
+	}
+});
+/**
+ * common_filters.js
+ * @author	: hwshim
+ * @desc	: 입력 폼 Validation 체크 및 입력값 필터 적용
+ */
 var Filters = {
 	/** 기본 hint가 보여질 타입 */
 	defHintType : "placeholder",// placeholder,focus_only,tooltip,left,right,top,bottom,title,etc(element id)
 	/** 필수여부 표시 HTML */
 	defEssential: '<span class="essential"> *</span>',
-	defHint		: '<span style="color:rgba(255,0,0,0.5); font-style:oblique;">(#HINT#)</span>',
-	defTooltip	: '<div style="margin-top:-25px;border:2px solid #00AFFF;position:absolute;display:none;z-index:1000;background-color:#AED6F1;border-radius:5px;padding:3px;"></div>',
+	defHint		: '<span style="color:#cccccc; font-style:oblique;">(#HINT#)</span>',
+	defTooltip	: '<div style="margin-top:-25px;border:1px solid #00AFFF;position:absolute;display:none;z-index:1000;background-color:#AED6F1;border-radius:3px;padding:3px;"></div>',
 	inputStyle	: 'rgba(255,0,0,0.1)',
 	validStyle	: 'rgba(50,100,255,0.1)',
 	previewHintStyle : '<textarea readonly style="background:rgba(255,255,255, 0);border:0;width:100%;height:100%;overflow:none;resize:none;" placeholder="#HINT#"></textarea>',
@@ -494,6 +516,8 @@ var Filters = {
 		for (var i in Filters._currElements) {
 			var el = Filters._currElements[i];
 			
+			console.log()
+			
 			// 같은 row에서 element 간의 미세한 높이 차이가 발생하므로 1의 자리를 모두 같게 해주기 위해
 			// (단, row의 pixel 높이가 10보다 크다는 전제가 필요함, 거의 대부분 10보다 크다)
 			
@@ -504,10 +528,13 @@ var Filters = {
 			*/
 			// 위방식이 아닌 상위 태그인 td태그의 위치값을 기준으로 정렬(hidden element가 포함된경우에는 이걸 사용하는것이 더 좋을듯)
 			var os = el.closest("td").offset();
-			var key = Filters._pad(parseInt(os.top), 4) + Filters._pad(parseInt(os.left), 4);
 			
+			if (!os || !os.top) continue;
 			if (el.prop("removed")) continue;	// 삭제되었되었으면 제외
 			///////if (el.is(":hidden")) continue;	// hidden인 경우 제외, 일부러 hidden시킨경우일수도 있으므로 사용X
+			
+			var key = Filters._pad(parseInt(os.top), 4) + Filters._pad(parseInt(os.left), 4);
+			
 			map[key] = el;
 		}
 		
@@ -1054,7 +1081,7 @@ var Filters = {
 					el.after("<br>"+Filters.defHint.replace("#HINT#", hint));
 				} else {
 					// hint영역을 만들어 붙일수도 있고, 이미 있는 영역에 hint를 표시
-					$("#"+hintType).text(hint);
+					$("#"+hintType).html(Filters.defHint.replace("#HINT#", hint));
 				}
 			}
 			if (hintType === "tooltip" && !Filters._tooltip) {
