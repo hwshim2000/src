@@ -100,7 +100,15 @@ currentnode.setAttribute("rel", "open") //indicate it's open
  // currentnode.parentNode.style.backgroundImage="url("+ddtreemenu.openfolder+")"
 	if (currentnode.parentNode) {
 		if (currentnode.parentNode.getElementsByTagName("IMG").length > 0) {
-			currentnode.parentNode.getElementsByTagName("IMG")[0].setAttribute("src", ddtreemenu.openfolder);
+			//console.log(currentnode.parentNode.getElementsByTagName("IMG")[0].innerHTML);
+			var pNodeImgId = currentnode.parentNode.getElementsByTagName("IMG")[0].getAttribute("id");
+			if (pNodeImgId) currentnode.parentNode.getElementsByTagName("IMG")[0].setAttribute("src", ddtreemenu.openfolder);
+			
+			//console.log(1,currentnode.parentNode.getElementsByTagName("IMG")[0].getAttribute("id"));
+			//console.log(2,currentnode.parentNode.getElementsByTagName("IMG")[1].getAttribute("id"));
+			//var pNodeImg = currentnode.parentNode.getElementsByTagName("IMG")[0].getAttribute("src");
+			//if (pNodeImg != ddtreemenu.blankfolder) currentnode.parentNode.getElementsByTagName("IMG")[0].setAttribute("src", ddtreemenu.openfolder);
+
 		}
 	}
 }
