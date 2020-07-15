@@ -1,13 +1,9 @@
 /**
- * 팝업 서비스
- * @author : X0114723
- */
-
-/**
  * 팝업 공통 서비스
  * @author: X0114723
  */
 var popupCommonService = {
+	showRoot : true,	// 최상의 ROOT 노드를 보여줄지 여부
 	popupCount : 0,
 	/**
 	 * 팝업 초기화
@@ -56,6 +52,10 @@ var popupCommonService = {
 				//+ 'ul { padding-left: 1em; }'
 				+ treeStyle + ' li { padding-left: 1em; border: 1px dotted black; border-width: 0 0 1px 1px; }'	// tree guide 라인 기본 스타일 정의
 				+ treeStyle + ' li.container { border-bottom: 0px; }'	// tree bottom 라인 제거	
+				
+				// 아래 는 ROOT노드를 제외시키고 트리를 그릴때, 좌측에 가로 Guide Line(dotted line)을 제거한다.
+				+ treeStyle + ' .treeview > li.submenu { border-bottom: 0px; }'	// tree bottom 라인 제거
+				
 				+ treeStyle + ' li.empty { font-style: italic; color: silver; border-color: silver; }'	// 현재 사용하지 않음
 				+ treeStyle + ' li p { margin:0 0 0 2px; background: #FFF; position: relative; top: 1em; }'	// p태그(내용) 스타일 정의(background가 중요하며, dotted line을 덮어쓰는 용도등)
 				+ treeStyle + ' li>div { border-top: 1px dotted black; width:10px; margin-left: -1em; padding: 0; }'	// 하위 디렉토리를 닫는 경우 top line이 안보이게 되므로 사이에 div태그를 넣어 폴더(부서)의 좌측 line을 추가
@@ -429,7 +429,16 @@ var popupOrgSearchService = {
 					 var rootNode = rootMap["CHILDRENS"][0];
 				 
 					 var treeHtml = popupOrgSearchService.makeDeptTreeNode(rootNode);
-					 $("#popupOrgTree").html(treeHtml);
+					 
+					 // ROOT_NODE 를 보여줄지 여부에 따라 tree를 다시 그린다.
+					 // ROOT 노드를 제외할 경우 ROOT 노드의 SUB 노드만을 추출하여 트리 영역을 그린다.
+					 if (popupCommonService.showRoot) {
+						$("#popupOrgTree").html(treeHtml);
+					 } else {
+						var subTreeHtml = $("ul", $(treeHtml)).html();
+					 	$("#popupOrgTree").html(subTreeHtml);
+					 }
+					 
 					 ddtreemenu.createTree("popupOrgTree", true);
 					 ddtreemenu.flatten('popupOrgTree', 'contact');
 					 //$(".submenu", $("#popupOrgTree")).addClass("dotted");
