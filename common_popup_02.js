@@ -1,3 +1,4 @@
+
 /**
  * 협력사인력조회 팝업
  * @author: hwshim
@@ -504,7 +505,16 @@ var popupEmpSearchService = {
 					
 					// popup tree html 생성
 					var treeHtml = popupEmpSearchService.makeDeptTreeNode(rootNode);
-				 	$("#popupDeptEmpTree").html(treeHtml);
+					
+					// ROOT_NODE 를 보여줄지 여부에 따라 tree를 다시 그린다.
+					// ROOT 노드를 제외할 경우 ROOT 노드의 SUB 노드만을 추출하여 트리 영역을 그린다.
+					if (popupCommonService.showRoot) {
+						$("#popupDeptEmpTree").html(treeHtml);
+					} else {
+						var subTreeHtml = $("ul", $(treeHtml)).html();
+					 	$("#popupDeptEmpTree").html(subTreeHtml);
+					}
+					 
 				 	// tree를 그린다.
 				 	ddtreemenu.createTree("popupDeptEmpTree", true);
 				 	ddtreemenu.flatten('popupDeptEmpTree', 'contact');
@@ -832,7 +842,16 @@ var popupDeptSearchService = {
 					
 					// popup tree html 생성
 					var treeHtml = popupDeptSearchService.makeDeptTreeNode(rootNode);
-				 	$("#popupDeptTree").html(treeHtml);
+					
+					// ROOT_NODE 를 보여줄지 여부에 따라 tree를 다시 그린다.
+					// ROOT 노드를 제외할 경우 ROOT 노드의 SUB 노드만을 추출하여 트리 영역을 그린다.
+					if (popupCommonService.showRoot) {
+						$("#popupDeptTree").html(treeHtml);
+					} else {
+						var subTreeHtml = $("ul", $(treeHtml)).html();
+					 	$("#popupDeptTree").html(subTreeHtml);
+					}
+				 	
 				 	// tree를 그린다.
 				 	ddtreemenu.createTree("popupDeptTree", true);
 				 	ddtreemenu.flatten('popupDeptTree', 'contact');
@@ -1173,4 +1192,4 @@ var popupVisitorInfoService = {
 			   }
 		 });
 	}
-};// end popupVisitorInfoService
+};// end popupVisitorInfoService 
