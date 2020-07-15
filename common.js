@@ -47,7 +47,7 @@ $(function() {
 		_glLoadingService.hide();
 		console.log("<<< ajaxStop");
 		// 모든 ajax 호출 완료 후 아래 이름으로 정의된 Listener가 있는 경우 호출
-		if (GL_AjaxStopListener && typeof GL_AjaxStopListener === 'function') GL_AjaxStopListener(e);
+		if (GL_AjaxStopListener && typeof GL_AjaxStopListener === 'function') GL_AjaxStopListener(event);
 	});
 	
 	/**
@@ -749,7 +749,43 @@ var Common = {
 		var localeStr = s.toLocaleString(undefined, {maximumFractionDigitis:2});
 		return localeStr + ' ' + sizes[i];
 	},
-	
+	/**
+	 * Url queryString을 json 객체로 반환
+	 * @param {String} str	- query string
+	 * @return {Object} 	- json object
+	 */
+	queryStringToJson : function(str) {
+		if (str.indexOf('?') > -1) str = str.split('?')[1];
+		return Common.propStringToJson(str, ',');
+	},
+	/**
+	 * properties를 담고 있는 string으로부터 json 객체로 반환(EX, window popup properties)
+	 * @param {String} str	- properties string
+	 * @return {Object} 	- json object
+	 */
+	propStringToJson : function(str, delim) {
+		if (!delim) delim = ',';
+		var pairs = str.split(delim);
+		var props = {};
+		pairs.forEach(function(pair) {
+			pair = pair.split('=');
+			props[pair[0]] = pair[1] || '';
+		});
+		return props;
+	},
+	/**
+	 * 랜덤으로 키 생성 
+	 * @param {Number} length	- 생성할 키 길이
+	 */
+	randomKey : function(length) {
+		var result           = '';
+		var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		var charactersLength = characters.length;
+		for ( var i = 0; i < length; i++ ) {
+			result += characters.charAt(Math.floor(Math.random() * charactersLength));
+		}
+		return result;
+	},
 	/**
 	 * Brower 기본 팝업
 	 * @param {String} url : 팝업 주소.
@@ -761,8 +797,8 @@ var Common = {
 	openWindow : function(url,width,height,scrollbars,resizable){
 		var s_width = screen.width;
 		var s_height = screen.height;
-	    width = (width==null)?700:width;
-	    height = (height==null)?500:height;
+	    width = (width==null)?600:width;
+	    height = (height==null)?800:height;
 	    var left = (s_width - width)/2;
 	    var top = (s_height - height)/2;
 	    scrollbars = (scrollbars==null)?"yes":scrollbars;
@@ -772,12 +808,55 @@ var Common = {
 	    ErpOpenWindow.resizeTo(width, height) ;
 	    
 	    if (resizable === "no") {
-		    $(ErpOpenWindow).resize(function(e) {
-		    	e.stopPropagation();
-		    	e.preventDefault();
-		    	ErpOpenWindow.resizeTo(width, height) ;
-	  		});
+	    	var browserInfo = Common.detectBrowser();
+	    	
+	    	if (browserInfo.isChrome) {
+			    $(ErpOpenWindow).resize(function(e) {
+			    	e.stopPropagation();
+			    	e.preventDefault();
+			    	ErpOpenWindow.resizeTo(width, height) ;
+		  		});
+	    	}
 	    }
+	},
+	/**
+	 * 현재 브라우저 버전 체크
+	 */
+	detectBrowser : function() {
+		// Opera 8.0+
+		var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+
+		// Firefox 1.0+
+		var isFirefox = typeof InstallTrigger !== 'undefined';
+
+		// Safari 3.0+ "[object HTMLElementConstructor]" 
+		var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && safari.pushNotification));
+
+		// Internet Explorer 6-11
+		var isIE = /*@cc_on!@*/false || !!document.documentMode;
+
+		// Edge 20+
+		var isEdge = !isIE && !!window.StyleMedia;
+
+		// Chrome 1 - 79
+		var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
+
+		// Edge (based on chromium) detection
+		var isEdgeChromium = isChrome && (navigator.userAgent.indexOf("Edg") != -1);
+
+		// Blink engine detection
+		var isBlink = (isChrome || isOpera) && !!window.CSS;
+		
+		return {
+			isFirefox		: isFirefox,
+			isChrome		: isChrome,
+			isSafari		: isSafari,
+			isOpera			: isOpera,
+			isIE			: isIE,
+			isEdge			: isEdge,
+			isEdgeChromium	: isEdgeChromium,
+			isBlink			: isBlink
+		};
 	}
 };
 
