@@ -4,27 +4,34 @@
  */
 $.fn.readonlyDatepicker = function (makeReadonly) {
     $(this).each(function(){
-
-        //find corresponding hidden field
+    	var thisObj = $(this);
+    	//find corresponding hidden field
         var name = $(this).attr('name');
-        var $hidden = $('input[name="' + name + '"][type="hidden"]');
+        var $hidden = thisObj.next();
+        var hiddenName = $hidden.prop('name');
+        //var $hidden = $('input[name="' + name + '"][type="hidden"]');
 
         //if it doesn't exist, create it
-        if ($hidden.length === 0){
+        if (!hiddenName || hiddenName != name){
             $hidden = $('<input type="hidden" name="' + name + '"/>');
-            $hidden.insertAfter($(this));
+            $hidden.insertAfter(thisObj);
         }
 
         if (makeReadonly){
-            $hidden.val($(this).val());
-            $(this).unbind('change.readonly');
-            $(this).attr('disabled', true);
+        	$hidden.val(thisObj.val());
+        	thisObj.unbind('change.readonly');
+        	thisObj.attr('disabled', true);
+        	thisObj.css("background", "#f2f2f2");
+        	thisObj.css("cursor", "default");
         }
         else{
-            $(this).bind('change.readonly', function(){
-                $hidden.val($(this).val());
-            });
-            $(this).attr('disabled', false);
+        	//thisObj.bind('change.readonly', function(){
+        	//	$hidden.val($(this).val());
+            //});
+        	$hidden.remove();
+            thisObj.attr('disabled', false);
+            thisObj.css("background", "");
+            thisObj.css("cursor", "");
         }
     });
 };
@@ -107,6 +114,7 @@ var CommonCalendar = {
 					limitDate.setDate(limitDate.getDate()+limitDays);
 					if (limitDays) toPicker.datepicker("option", "maxDate", limitDate);
 				}
+				if (Common.detectBrowser().isChrome) fromPicker.focus();	// 날짜 선택후 focus를 유지하고 있어야지만, enter키를 누를 경우 검색이 가능하다.
 			}
 		};
 		var toOptions = {
@@ -122,6 +130,7 @@ var CommonCalendar = {
 					if (limitDay) toPicker.datepicker("option", "min", limitDate);
 				}
 				*/
+        		if (Common.detectBrowser().isChrome) toPicker.focus();	// 날짜 선택후 focus를 유지하고 있어야지만, enter키를 누를 경우 검색이 가능하다.
         	}
         };
 		
@@ -202,6 +211,9 @@ var CommonCalendar = {
 		if (!this.inited) this.init();
 		var picker = $("#"+id);
 		// ------ bug : 옵션을 지정한후, datepicker를 한번더 호출해야된다.
+		options.onSelect = function(dateText, inst) {
+			if (Common.detectBrowser().isChrome) picker.focus();
+		}
 		picker.datepicker(options);
 		
 		/*picker.datepicker({
@@ -210,6 +222,7 @@ var CommonCalendar = {
 	           	console.log(dateText);
 		       	console.log($.datepicker.iso8601Week(new Date(dateText)))
 		       	$(this).val("'Week Number '" + $.datepicker.iso8601Week(new Date(dateText)));
+		       	picker.focus();
 	        }
 		});*/
 		
