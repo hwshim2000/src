@@ -137,7 +137,12 @@ var Validate = {
 	 */
 	maxLength : function ( element, maxLength, message, isOption ) {
 		if (this._isPass(element, isOption)) return false;
-		if ( element.val().length > maxLength ) {
+		var lines = element.val().split('\n').length;
+		
+		if (!lines) lines = 0;
+		else lines--;	// 줄바꿈의 수는 전체 라인수 - 1
+		
+		if ( element.val().length + lines > maxLength ) {
 			alert(message.replace("#LEN#", maxLength)) ;
 			this._focus( element ) ;
 			return true ;
@@ -193,7 +198,7 @@ var Validate = {
 	 */
 	isNotLoginPw : function( element, message, isOption ) {
 		if (this._isPass(element, isOption)) return false;
-		if ( !element.val().match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?])[A-Za-z\d!@#$%^&*?]{10,}$/) ) { // 알파벳 숫자 포함 10글자 이상, 특수문자 가능
+		if ( !element.val().match(/(?=.*\d)(?=.*[A-Za-z])[A-Za-z\d$@$!%*?&].{9,}/) ) { // 알파벳 숫자 포함 10글자 이상, 특수문자 가능
 		// if ( !element.val().match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@$!%*?&])[A-Za-z\d$@$!%*?&]{8,}/) ) { // 기본 8글자 이상
 			alert(message) ;
 			this._focus( element ) ;
@@ -292,6 +297,61 @@ var Validate = {
 			this._focus( element ) ;
 			return true ;
 		} else {
+			return false;
+		}
+	},
+	
+	/**
+	 * IP 형식을 확인한다.
+	 * @param {Object} element		- jQuery Element
+	 * @param {String} message		- 유효하지 않은 경우 메시지
+	 * @param {Boolean} isOption	- 필수 여부
+	 * @return {Boolean} 			- 유효 여부
+	 */
+	isIp : function(element,message, isOption){
+		if (this._isPass(element, isOption)) return false;
+		var check = function(v){
+			try{
+				  return(v<=255 && v>=0)
+			}catch(x){
+				return false
+			};
+		};
+		
+		var re = element.val().split('.');
+		if(re.length==4){
+			if(!(check(re[0]) && check(re[1]) && check(re[2]) && check(re[3]))){ 
+				alert(message) ;
+				this._focus( element ) ;
+				return true ;
+			}else{
+				return false;
+			}
+		}else{
+			alert(message) ;
+			this._focus( element ) ;
+			return true ;
+		}
+	},
+	
+	/**
+	 * MAC Address 형식을 확인한다.
+	 * @param {Object} element		- jQuery Element
+	 * @param {String} message		- 유효하지 않은 경우 메시지
+	 * @param {Boolean} isOption	- 필수 여부
+	 * @return {Boolean} 			- 유효 여부
+	 */
+	
+	isMacAddr : function(element,message, isOption){
+		if (this._isPass(element, isOption)) return false;
+        
+		var temp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+		
+		if(!temp.test(element.val())){
+			alert(message) ;
+			this._focus( element ) ;
+			return true ;
+		}else{
 			return false;
 		}
 	},
@@ -399,6 +459,42 @@ var Validate = {
 	},
 	
 	/**
+	 * 대만 통행증 식별번호의 유효성을 확인한다.
+	 * @param {Object} element		- jQuery Element
+	 * @param {String} message		- 유효하지 않은 경우 메시지
+	 * @param {Boolean} isOption	- 필수 여부
+	 * @return {Boolean} 			- 유효 여부
+	 */
+	isNotPersonNoTaiwan : function( element, message, isOption ) {
+		if (this._isPass(element, isOption)) return false;
+		if ( !element.val().match(/^\d{8}$/) ) {	// jbsun : 8자리 숫자
+			alert(message) ;
+			this._focus( element ) ;
+			return true ;
+		} else {
+			return false;
+		}
+	},
+	
+	/**
+	 * 홍콩/마카오 통행증 식별번호의 유효성을 확인한다.
+	 * @param {Object} element		- jQuery Element
+	 * @param {String} message		- 유효하지 않은 경우 메시지
+	 * @param {Boolean} isOption	- 필수 여부
+	 * @return {Boolean} 			- 유효 여부
+	 */
+	isNotPersonNoHongkongMacao : function( element, message, isOption ) {
+		if (this._isPass(element, isOption)) return false;
+		if ( !element.val().match(/^[a-zA-Z]\d{8}$/) ) {	// jbsun : 1자리 영문 + 8자리 숫자
+			alert(message) ;
+			this._focus( element ) ;
+			return true ;
+		} else {
+			return false;
+		}
+	},
+	
+	/**
 	 * 자동차 번호의 유효성을 확인한다(중국자동차번호).
 	 * @param {Object} element		- jQuery Element
 	 * @param {String} message		- 유효하지 않은 경우 메시지
@@ -416,6 +512,7 @@ var Validate = {
 			return false;
 		}
 	},
+	
 	/**
 	 * 중국어 회사명 체크(중국어+영어+숫자+특수문자)
 	 * @param {Object} element		- jQuery Element
@@ -468,6 +565,60 @@ var Validate = {
 	isNotEng : function ( element, message, isOption ) {
 		if (this._isPass(element, isOption)) return false;
 		if ( !element.val().match(/^[A-Za-z0-9 !@#$&%^*()\-_=+\\\|\[\]{};:\'",.<>\/?]+$/) ) {
+			alert(message) ;
+			this._focus( element ) ;
+			return true ;
+		} else {
+			return false;
+		}
+	},
+	
+	/**
+	 * 한국어 체크(한국어)
+	 * @param {Object} element		- jQuery Element
+	 * @param {String} message		- 유효하지 않은 경우 메시지
+	 * @param {Boolean} isOption	- 필수 여부
+	 * @return {Boolean} 			- 유효 여부
+	 */
+	isKor : function ( element, message, isOption ) {
+		if (this._isPass(element, isOption)) return false;
+		if ( !element.val().match(/^[\u3131-\uD7A3]+$/) ) {
+			alert(message) ;
+			this._focus( element ) ;
+			return true ;
+		} else {
+			return false;
+		}
+	},
+	
+	/**
+	 * 영문 체크(공백허용)
+	 * @param {Object} element		- jQuery Element
+	 * @param {String} message		- 유효하지 않은 경우 메시지
+	 * @param {Boolean} isOption	- 필수 여부
+	 * @return {Boolean} 			- 유효 여부
+	 */
+	isEng : function ( element, message, isOption ) {
+		if (this._isPass(element, isOption)) return false;
+		if ( !element.val().match(/^[a-zA-Z\s]+$/) ) {
+			alert(message) ;
+			this._focus( element ) ;
+			return true ;
+		} else {
+			return false;
+		}
+	},
+	
+	/**
+	 * 영문, 중문, 한글 체크(공백허용)
+	 * @param {Object} element		- jQuery Element
+	 * @param {String} message		- 유효하지 않은 경우 메시지
+	 * @param {Boolean} isOption	- 필수 여부
+	 * @return {Boolean} 			- 유효 여부
+	 */
+	isEngChnKor : function ( element, message, isOption ) {
+		if (this._isPass(element, isOption)) return false;
+		if ( !element.val().match(/^[a-zA-Z\u4e00-\u9fff\u3131-\uD7A3\s]+$/) ) {
 			alert(message) ;
 			this._focus( element ) ;
 			return true ;
@@ -923,5 +1074,44 @@ var Validate = {
 		else if (month < 1 || month > 12) return false;
 		else if (day < 1 || day > (new Date(year, month, "")).getDate() ) return false;
 		else return true;
+	}
+}
+
+/**
+ * 위 변조 방지
+ * (데이터 전송시, 랜덤생성키를 요청데이터에 함께 보낸다.)
+ * (서버에서는 키값을 이용하여 hash코드 생성하여 리턴한다.)
+ */
+var Checksum = {
+	/**
+	 * checksum을 위한 전송 키 생성
+	 * @param {Object} data	- 전송 데이터
+	 */
+	set : function(data) {
+   		//if (data && typeof CryptoJS !== 'undefined') {
+   		if (data && $.isFunction($.MD5)) {
+   			data.secKey = Common.randomKey(32);
+   		}
+   		this.src = data;
+   	},
+   	/**
+   	 * 서버로부터 받은 hash코드의 변조 여부 체크
+   	 * @param {Object} dst	- 결과 데이터
+   	 * @return {Boolean}	- 데이터 변조 여부
+   	 */
+   	checksum : function(dst) {
+   		if (!dst || dst.resultCode != WebError.OK) return false;
+   		//if (typeof CryptoJS === 'undefined') return true;
+   		// hashcode 생성 함수가 없으면 checksum 결과 성공
+   		if (!$.isFunction($.MD5)) return true;
+   		// 전송데이터의 secKey가 없으면 checksum을 하지 않는것으로 간주하여 결과 성공
+   		if (!this.src || !this.src.secKey) return true;
+   		// secKey를 전송하였는데, 리턴 hash가 없으면 실패
+   		if (!dst.hash) return false;
+   		
+   		// 결과 hash와 전송 hash가 같으면 성공
+   		//if (dst.hash === CryptoJS.MD5(src.secKey+WebError.OK).toString()) return true;
+   		if (dst.hash === $.MD5(this.src.secKey+WebError.OK)) return true;
+   		else return false;
 	}
 }
