@@ -95,22 +95,34 @@ var ApprService = {
 	/**
 	 * 요청부서 직위코드 결재선 포함 체크
 	 * @param {String} jwCds	- 직위코드목록(,로구분된 문자열)
+	 * @param {String} includeDeptId	- 포함부서
+	 * @param {String} excludeDeptId	- 제외부서 
 	 * @return {Number}			- 해당 직위코드가 포함된 결재선 수
 	 */
-	reqApproveJwCdCheck : function(jwCds) {
+	reqApproveJwCdCheck : function(jwCds, includeDeptId, excludeDeptId) {
 		if (!jwCds) jwCds = ApprService.formInfo.apprReqLine;
 		
 		var apprKind = "";
 		var apprJwCd = "";
 		var reqCnt = 0;
-	
+		
 		$("input[name=apprKind]").each(function(index, item){
 			apprKind = $("input[name='apprKind']")[index].value;
 			apprJwCd = $("input[name='apprJwCd']")[index].value;
+			apprDeptId = $("input[name='apprDeptId']")[index].value;
 			
 			if(apprKind == "A" && apprJwCd) {
 				if(jwCds.indexOf(apprJwCd) > -1) {
-					reqCnt = reqCnt + 1;
+					// 반드시포함되어야할 부서와 같은 경우 
+					if (includeDeptId) {
+						if (includeDeptId === apprDeptId) reqCnt = reqCnt + 1;
+					}
+					// 포함되면 안되는 부서일 경우
+					else if (excludeDeptId) {
+						 if (excludeDeptId != apprDeptId) reqCnt = reqCnt + 1;
+					} 
+					// 그외의 경우
+					else reqCnt = reqCnt + 1;
 				}
 			}
 		});
