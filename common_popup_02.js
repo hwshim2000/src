@@ -14,6 +14,8 @@ var popupPartnerVisitorSearchService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupPartnerVisitorSearch";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -48,6 +50,8 @@ var popupPartnerVisitorSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -128,8 +132,7 @@ var popupPartnerVisitorSearchService = {
 						
 						$("a[name='"+$thisObj.popupId+"']").off("click").on("click", function(e){ //제목 
 							$thisObj.fnCallback(list[$(this).attr("value")]);
-							$thisObj.close();
-							
+							if ($thisObj.autoClose) $thisObj.close();
 							e.preventDefault();
 						});
 						
@@ -158,6 +161,8 @@ var popupGateSearchService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupGateSearch";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -194,6 +199,8 @@ var popupGateSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -215,7 +222,7 @@ var popupGateSearchService = {
 			gateArr.push(popupGateSearchService.list[this.value]);
 		});
 		this.fnCallback(gateArr);
-		this.close();
+		if (this.autoClose) this.close();
 	},
 	/**
 	 * 팝업 데이터 조회 - 출입 구역
@@ -258,11 +265,10 @@ var popupGateSearchService = {
 				              	 +      '<span class="jqformCheckbox"></span>'
 				              	 +  '</span>'
 				                 +  '</td>'
-				              	 + 	'<td scope="row" class="tl" title="'+list[i].grpNm+'">'
-				              	 +		'<div class="text-ellipsis"><p>'
-				              	 +			list[i].grpNm
-				              	 +	'</p></div></td>'
-								 + 	'<td scope="row">' + list[i].empDispNm + '</td>';
+				              	 + 	'<td scope="row" class="tl">'
+				              	 +		Common.ellipsis(list[i].grpNm)
+				              	 +	'</td>'
+								 + 	'<td scope="row">' + Common.viewEmpIdNm(list[i].restrictEmpNm, list[i].restrictEmpId) + '</td>';
 							if (gateType === 'EMP_SR') {
 								rows+=  '<td scope="row">' + list[i].empSpecial + '</td>'
 									+  '<td scope="row">' + list[i].empRestrict + '</td>';
@@ -304,6 +310,8 @@ var popupEmpSearchService = {
 		this.pObj = $("#"+this.popupId);
 		this.searchParams = searchParams || {};
 		this.deptFix = this.searchParams.deptFix?true:false;
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		
 		popupCommonService.init(this.pObj);
 		popupCommonService.setTreeStyle('popupDeptEmpTreeDiv');	// tree style 설정(guide line)
@@ -349,6 +357,8 @@ var popupEmpSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -379,7 +389,7 @@ var popupEmpSearchService = {
 		if (formData.empId) {
 			this.fnCallback(this.keyMap[formData.empId]);
 		}
-		this.close();
+		if (this.autoClose) this.close();
 	},
 
 	/**
@@ -473,8 +483,11 @@ var popupEmpSearchService = {
 						// 사원 선택시 해당 사원 정보 리턴하고 팝업장 닫기
 						$("a[name='"+$thisObj.popupId+"']", $tblObj).off("click").on("click", function(e){ //제목
 							var obj = list[$(this).attr("value")];
-							$thisObj.showSelectedEmptInfo(obj);
-							$thisObj.expandDeptTree(obj.deptId);
+							if ($thisObj.expandDeptTree(obj.deptId)) {
+								$thisObj.showSelectedEmptInfo(obj);
+							}
+							//$thisObj.showSelectedEmptInfo(obj);
+							//$thisObj.expandDeptTree(obj.deptId);
 							
 							e.preventDefault();
 						});
@@ -591,7 +604,7 @@ var popupEmpSearchService = {
  	 * @param {String} deptId	- 선택 부서
  	 */
  	expandDeptTree : function(deptId) {
- 		if (!deptId) return;
+ 		if (!deptId) return false;
  		// 트리여역
 		var treeObj = document.getElementById("popupDeptEmpTreeDiv");
 		// 트리의 부서 폴더 이미지 아이콘
@@ -609,7 +622,7 @@ var popupEmpSearchService = {
 			/*if (LANG === 'ko') alert("존재하지 않는 부서이거나, 사용이 제한된 부서입니다. : " + deptId);
 			else if (LANG === 'en') alert("A department that does not exist or is restricted in use. : " + deptId);
 			else alert("不存在的部门或使用限制的部门。 : " + deptId);*/
-			return;
+			return false;
 		}
 		
 		// 선택 이미지 영역의 위치를 알아낸다.
@@ -632,6 +645,8 @@ var popupEmpSearchService = {
 		treeObj.scrollTop = lineHeight + treeObj.scrollTop - (treeObj.clientHeight/2 - diffOffsetH);
 		// 선택한 부서가 트리에서 잘 보이도록 스타일 변경
 		this.setDeptMenuStyle(deptId);
+		
+		return true;
 	},
  	/**
  	 * 클릭시 부서명 스타일 설정
@@ -674,6 +689,8 @@ var popupDeptSearchService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupDeptSearch";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		
 		popupCommonService.init(this.pObj);
 		popupCommonService.setTreeStyle('popupDeptTreeDiv');
@@ -712,6 +729,8 @@ var popupDeptSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -742,7 +761,7 @@ var popupDeptSearchService = {
 		if (formData.deptId) {
 			this.fnCallback(this.keyMap[formData.deptId]);
 		}
-		this.close();
+		if (this.autoClose) this.close();
 	},
 	/**
 	 * 팝업 데이터 조회 - 부서
@@ -806,8 +825,9 @@ var popupDeptSearchService = {
 						
 						$("a[name='"+$thisObj.popupId+"']").off("click").on("click", function(e){ //제목
 							var obj = list[$(this).attr("value")];
-							$thisObj.showSelectedDeptInfo(obj);
-							$thisObj.expandDeptTree(obj.deptId);
+							if ($thisObj.expandDeptTree(obj.deptId)) {
+								$thisObj.showSelectedDeptInfo(obj);
+							};
 							//$thisObj.fnCallback(list[$(this).attr("value")]);
 							//$thisObj.close();
 							
@@ -934,7 +954,7 @@ var popupDeptSearchService = {
  	 * @param {String} deptId	- 부서 아이디
  	 */
  	expandDeptTree : function(deptId) {
- 		if (!deptId) return;
+ 		if (!deptId) return false;
  		// 트리여역
 		var treeObj = document.getElementById("popupDeptTreeDiv");
 		// 트리의 부서 폴더 이미지 아이콘
@@ -952,7 +972,7 @@ var popupDeptSearchService = {
 			/*if (LANG === 'ko') alert("존재하지 않는 부서이거나, 사용이 제한된 부서입니다. : " + deptId);
 			else if (LANG === 'en') alert("A department that does not exist or is restricted in use. : " + deptId);
 			else alert("不存在的部门或使用限制的部门。 : " + deptId);*/
-			return;
+			return false;
 		}
 		
 		// 선택 이미지 영역의 위치를 알아낸다.
@@ -975,6 +995,8 @@ var popupDeptSearchService = {
 		treeObj.scrollTop = lineHeight + treeObj.scrollTop - (treeObj.clientHeight/2 - diffOffsetH);
 		// 선택한 부서가 트리에서 잘 보이도록 스타일 변경
 		this.setDeptMenuStyle(deptId);
+		
+		return true;
 	},
  	/**
  	 * 클릭시 부서명 스타일 설정
@@ -1011,6 +1033,8 @@ var popupPermissionApprovalOrderService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupPermissionApprovalOrder";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -1035,6 +1059,8 @@ var popupPermissionApprovalOrderService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -1050,7 +1076,7 @@ var popupPermissionApprovalOrderService = {
 			checkedEmpObjs[inx+1] = popupPermissionApprovalOrderService.empMap[empId];
 		});
 		this.fnCallback(checkedEmpObjs);
-		this.close();
+		if (this.autoClose) this.close();
 	},
 	/**
 	 * 팝업 데이터 조회 - 결재 구성원 조회
@@ -1096,7 +1122,7 @@ var popupPermissionApprovalOrderService = {
 
 						$("a[name='"+$thisObj.popupId+"']").off("click").on("click", function(e){ //제목 
 							$thisObj.fnCallback(list[$(this).attr("value")]);
-							$thisObj.close();
+							if ($thisObj.autoClose) $thisObj.close();
 							e.preventDefault();
 						});
 						
@@ -1119,6 +1145,8 @@ var popupVisitorInfoService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupOutUserDetailSearch";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -1139,6 +1167,8 @@ var popupVisitorInfoService = {
 		this.pObj.show();
 	},
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		//this.pObj.find(".tblist_popup").html('');
@@ -1165,13 +1195,15 @@ var popupVisitorInfoService = {
 				    if (json != null && json.resultCode == WebError.OK){
 			   			var info = json.info ;
 
-			   			info.visitorNm = info.visitorNm + '/' + info.visitorNmKo;
+			   			info.visitorNm = info.visitorNm;
+			   			if (info.visitorNmKo) info.visitorNm += '/' + info.visitorNmKo;
 			   			info.lastPwChgDt = Common.changeDashDate(info.lastPwChgDt);
-			   			
+			   			info.partnerNm = Common.viewPartnerIdNm(info);
 			   			info.birthDate = Common.changeDashDate(info.birthDate);
-			   			info.secEduDt = Common.changeDashDate(info.secEduDt);
+			   			//info.secEduDt = Common.changeDashDate(info.secEduDt);
+			   			if (info.secEduYn != 'Y') info.expSecEduDtDash = '';	// 안전교육만료일자, 3개월이 지났으면, 보여주지 않는다.
 			   			info.passEduDt = Common.changeDashDate(info.passEduDt);
-			   			info.visaEndDt = Common.changeDashDate(info.visaEndDt);
+			   			//info.visaEndDt = Common.changeDashDate(info.visaEndDt);
 			   			if (info.inoutDenyYn === 'N') {
 				   			info.inoutDenyStrtDt = '';
 				   			info.inoutDenyEndDt = '';
