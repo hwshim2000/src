@@ -98,7 +98,7 @@
 			}
 			
 			html += '<input accept="'+accept+'" style="display:none;" type="file" name="'+uploadFormName+'" id="'+uploadFormId+'">'
-				+ '<input id="'+uploadFileName+'" name="dispFileName" class="Textinput" ' + fileInfoShowProp + '>'
+				+ '<input id="'+uploadFileName+'" name="dispFileName" class="Textinput" ' + fileInfoShowProp + ' onfocus="this.blur()">'
 				+ '</p>'
 				+ ' <button class="Button01 btn_line_gray" data-type="button" data-converted="true" type="button" id="'+uploadBtn+'">'+uploadBtnName+'</button>'
 				;
@@ -139,7 +139,7 @@
 				+ '</span>';
 			
 			if (preview.enable) {
-				CommonService._makeThumbImageRatio(fileInfo, preview.targetId, preview.width, preview.height, preview.enablePopup, popupProps);
+				CommonService._makeThumbImageRatio(fileInfo, preview.targetId, preview.width, preview.height, preview.enablePopup, popupProps, true);
 			}
 		}
 		
@@ -321,6 +321,8 @@
 				if (json != null && json.resultCode == WebError.OK){
 					json.fileInfo.data = CommonService._getImgData(json.blob);
 					if (callback && typeof callback === 'function') callback(json.fileInfo);
+				} else {
+					if (callback && typeof callback === 'function') callback(null);
 				}
 			}
 		});
@@ -392,7 +394,6 @@
 	 *			fullscreen	=	전체화면모드 (IE)
 	 */
 	popup : function(popupUrl, name, options) {
-		
 		if (!options) options = {};
 
 		//-------------------------------------------------------------------------------------------
@@ -400,23 +401,37 @@
 		var dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : screen.left;
 	    var dualScreenTop = window.screenTop !== undefined ? window.screenTop : screen.top;
 	    var dw = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
-	    var dh = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+	    var dh = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.availHeight;
 	    //-------------------------------------------------------------------------------------------
 	    
 	    var width = parseInt(options.width || 600);
 		var height = parseInt(options.height || 800);
 		if (width > screen.width) width = screen.width;		// 만일, 설정값의 팝업윈도우 넓이가 모니터의 크기보다 큰경우
-		if (height > screen.height) height = screen.height;	// 만일, 설정값의 팝업윈도우 높이가 모니터의 크기보다 큰경우
+		if (height > screen.availHeight) height = screen.availHeight;	// 만일, 설정값의 팝업윈도우 높이가 모니터의 크기보다 큰경우
+		//if (height > screen.height) height = screen.height;	// 만일, 설정값의 팝업윈도우 높이가 모니터의 크기보다 큰경우
 		
 		//----------계산방법 1-----------
 		var left = options.left || (dw - width) / 2 + dualScreenLeft;	// 모니터 배율 설정값이 100%가 아닌경우 위치가 정확히 계산안된다.
-		var top = options.top || (dh - height) / 2; // + dualScreenTop;	// 높이가 상황에 따라서 -가 나오는경우때문에( 듀얼 모니터 위치때문)
-	    //----------계산방법 2-----------
+		var top = options.top || (screen.availHeight - height)/2 + window.screenY; // 높이가 상황에 따라서 -가 나오는경우때문에( 듀얼 모니터 위치때문)
+		//var top = options.top || (dh - height) / 2; // + dualScreenTop;	// 높이가 상황에 따라서 -가 나오는경우때문에( 듀얼 모니터 위치때문)
+		//----------계산방법 2-----------
 		//var left = options.left || window.screenX + (screen.width / 2) - (width / 2);
 		//var top =  options.right || (screen.height / 2) - (height / 2);
  	  	//----------계산방법 3-----------
 		//var left = options.left || (screen.width - width)/2;
 		//var top = options.top || (screen.height - height)/2;
+		
+		// 팝업이 동시에 여러개 오픈되는 경우,(특히, 공지 팝업에서 주로 사용)
+		if (options.space) {
+			if (!this.first_left) this.first_left = left;	// 최초 left위치 기억
+			if (!this.first_top) this.first_top = top;		// 최초 top위치 기억
+			
+			// 간격을 띄우기 위한 정보가 있다면, 최초 설정위치에서, 설정된 간격 만큼 popup 위치 변경 
+			if (options.space.left) left = this.first_left + options.space.left;
+			if (options.space.top) top = this.first_top + options.space.top;
+			//if (options.space.left) left = left + options.space.left;
+			//if (options.space.top) top = top + options.space.top;
+		}
 		
 		var toolbar = options.toolbar || 'no';			// i.e, firefox
 		var location = options.location || 'no';
@@ -476,23 +491,37 @@
 		var dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : screen.left;
 	    var dualScreenTop = window.screenTop !== undefined ? window.screenTop : screen.top;
 	    var dw = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
-	    var dh = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+	    var dh = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.availHeight;
 	    //-------------------------------------------------------------------------------------------
 	    
 	    var width = parseInt(options.width || 600);
 		var height = parseInt(options.height || 800);
 		if (width > screen.width) width = screen.width;		// 만일, 설정값의 팝업윈도우 넓이가 모니터의 크기보다 큰경우
-		if (height > screen.height) height = screen.height;	// 만일, 설정값의 팝업윈도우 높이가 모니터의 크기보다 큰경우
+		if (height > screen.availHeight) height = screen.availHeight;	// 만일, 설정값의 팝업윈도우 높이가 모니터의 크기보다 큰경우
+		//if (height > screen.height) height = screen.height;	// 만일, 설정값의 팝업윈도우 높이가 모니터의 크기보다 큰경우
 		
 		//----------계산방법 1-----------
 		var left = options.left || (dw - width) / 2 + dualScreenLeft;	// 모니터 배율 설정값이 100%가 아닌경우 위치가 정확히 계산안된다.
-		var top = options.top || (dh - height) / 2; // + dualScreenTop;	// 높이가 상황에 따라서 -가 나오는경우때문에( 듀얼 모니터 위치때문)
-	    //----------계산방법 2-----------
+		var top = options.top || (screen.availHeight - height)/2 + window.screenY; // 높이가 상황에 따라서 -가 나오는경우때문에( 듀얼 모니터 위치때문)
+		//var top = options.top || (dh - height) / 2; // + dualScreenTop;	// 높이가 상황에 따라서 -가 나오는경우때문에( 듀얼 모니터 위치때문)
+		//----------계산방법 2-----------
 		//var left = options.left || window.screenX + (screen.width / 2) - (width / 2);
 		//var top =  options.right || (screen.height / 2) - (height / 2);
  	  	//----------계산방법 3-----------
 		//var left = options.left || (screen.width - width)/2;
 		//var top = options.top || (screen.height - height)/2;
+		
+		// 팝업이 동시에 여러개 오픈되는 경우,(특히, 공지 팝업에서 주로 사용)
+		if (options.space) {
+			if (!this.first_left) this.first_left = left;	// 최초 left위치 기억
+			if (!this.first_top) this.first_top = top;		// 최초 top위치 기억
+			
+			// 간격을 띄우기 위한 정보가 있다면, 최초 설정위치에서, 설정된 간격 만큼 popup 위치 변경 
+			if (options.space.left) left = this.first_left + options.space.left;
+			if (options.space.top) top = this.first_top + options.space.top;
+			//if (options.space.left) left = left + options.space.left;
+			//if (options.space.top) top = top + options.space.top;
+		}
 		
 		var toolbar = options.toolbar || 'no';			// i.e, firefox
 		var location = options.location || 'no';
@@ -557,23 +586,26 @@
 	
 	/**
 	 * Static한 파일 다운로드 (주로 양식 파일 다운로드에 사용)
-	 * @param {String} docNo	- 다운로드에 사용될 문서 식별 번호
+	 * @param {String} docNo				- 다운로드에 사용될 문서 식별 번호
+	 * @param {Boolean} saveOnly(i.e10+)	- 파일 다운로드 또는 열기 옵션 여부 
 	 */
-	documentDownload : function(docNo) {
+	documentDownload : function(docNo, saveOnly) {
 		var filename = null;
 		
 		if (docNo === "WL_DOC_001")	filename = '';
 		else if (docNo === "WL_DOC_002")	filename = '';
-		else if (docNo === "WL_DOC_003")	filename = '';
+		else if (docNo === "WL_DOC_003")	filename = '(Form)__임시__계약업체변경관련서약서.docx';
 		else if (docNo === "WL_DOC_004")	filename = '(Form)代表管理者保安承诺书_대표자관리자보안서약서.docx';
 		else if (docNo === "WL_DOC_005")	filename = '(Form)代表管理者委任状_대표관리자위임장.docx';
 		else if (docNo === "WL_DOC_006")	filename = '(Form)指纹电梯保安备忘录_지문엘리베이터보안각서.xlsx';
 		else if (docNo === "WL_DOC_007")	filename = '(Form)指纹电梯使用安全标准_지문엘리베이터사용안전기준.xlsx';
 		else if (docNo === "WL_DOC_008")	filename = '(Form)VIP访问申请书填写样式_VIP방문신청서양식.xlsx';
 		else if (docNo === "WL_DOC_009")	filename = '(Form)施工出入申请书_시공출입신청서.xlsx';
+		else if (docNo === "WL_DOC_010")	filename = '(Form)已搬入物品搬入申报_기반입 물품 반입 신고.xlsx';
+		else if (docNo === "WL_DOC_011")	filename = '(Form)内部网OPEN申请样式_내부망 오픈 신청 양식.xlsx'; 
 		else alert('File not found.');
 		
-		if (filename) CommonService.download(contextPath+'/statics/docs/' + docNo, filename);
+		if (filename) CommonService.download(contextPath+'/statics/docs/' + docNo, filename, saveOnly);
 	},
 	/**
 	 * url에서 filename과 mimetype으로 다운로드
@@ -583,7 +615,7 @@
 	 * @param {String} filename	- 다운로드 파일명(없으면 경로에 포함된 파일명)
 	 * @param {String} mimetype	- 다운로드할 파일의 mimetype
 	 */
-	download : function(url, filename, mimetype) {
+	download : function(url, filename, mimetype, saveOnly) {
 		if (!url) return;
 		//if (!filename) filename = url.replace(/[\#\?].*$/,'');
 		if (!filename) filename = url.split('/').pop().split('#')[0].split('?')[0];
@@ -592,7 +624,7 @@
    		x.open("GET", contextPath + url, true);
    		x.responseType = 'blob';
    		x.onload=function(e){
-   			if (x.status == 200) CommonService._download(x.response, filename, mimetype);
+   			if (x.status == 200) CommonService._download(x.response, filename, mimetype, saveOnly);
    			else if (x.status == 404) alert("File Not found.");
    			else alert("File download error.");
    		}
@@ -607,7 +639,7 @@
 	  * @param {String} strFileName	- 다운로드 파일명
 	  * @param {String} strMimeType	- mimetype이 없는 경우, 기본값 : application/octet-stream
 	  */ 
-	_download : function(data, strFileName, strMimeType) {
+	_download : function(data, strFileName, strMimeType, saveOnly) {
 	 	var self = window, // this script is only for browsers anyway...
 	 		u = "application/octet-stream", // this default mime also triggers iframe downloads
 	 		m = strMimeType || u, 
@@ -634,9 +666,15 @@
 	 	
 	 	//go ahead and download dataURLs right away
 	 	if(String(x).match(/^data\:[\w+\-]+\/[\w+\-]+[,;]/)){
-	 		return navigator.msSaveBlob ?  // IE10 can't do a[download], only Blobs:
-	 			navigator.msSaveBlob(d2b(x), fn) : 
-	 			saver(x) ; // everyone else can save dataURLs un-processed
+	 		if (saveOnly) {
+		 		return navigator.msSaveBlob ?  // IE10 can't do a[download], only Blobs:
+		 			navigator.msSaveBlob(d2b(x), fn) :
+		 			saver(x) ; // everyone else can save dataURLs un-processed
+	 		} else {
+	 			return navigator.msSaveOrOpenBlob ?  // IE10 can't do a[download], only Blobs:
+			 			navigator.msSaveOrOpenBlob(d2b(x), fn) :
+			 			saver(x) ; // everyone else can save dataURLs un-processed
+	 		}
 	 	}//end if dataURL passed?
 	 	
 	 	try{
@@ -691,9 +729,15 @@
 	 		
 	 	}//end saver 
 	 	
-	 	if (navigator.msSaveBlob) { // IE10+ : (has Blob, but not a[download] or URL)
-	 		return navigator.msSaveBlob(blob, fn);
-	 	} 	
+	 	if (saveOnly) {
+		 	if (navigator.msSaveBlob) { // IE10+ : (has Blob, but not a[download] or URL)
+		 		return navigator.msSaveBlob(blob, fn);
+		 	}
+	 	} else {
+	 		if (navigator.msSaveBlob) { // IE10+ : (has Blob, but not a[download] or URL)
+		 		return navigator.msSaveOrOpenBlob(blob, fn);
+		 	}
+	 	}
 	 	
 	 	if(self.URL){ // simple fast and modern way using Blob and URL:
 	 		saver(self.URL.createObjectURL(blob), true);
@@ -745,14 +789,47 @@
 		}
 		img.onerror = function() {
 			var pDivObj = CommonService._resizePreviewDiv(targetId, w, h);
+			var imgObj = CommonService.getErrImgObj(pDivObj.imageDivId, w, h);
 			var targetObj = $("#"+pDivObj.imageDivId);
 			
-			var src = contextPath + '/images/img_nf.png';
-			var thumbHtml = '<img src="'+ src + '" width="'+ w + '" height="' + h + '" alt="No image" title="No image" />';
+			var thumbHtml = '<img src="'+ imgObj.src + '" width="'+ imgObj.w + '" height="' + imgObj.h + '" alt="No image" title="No image" '+imgObj.style+' />';
 			targetObj.html(thumbHtml);
 		}
 		//img.src = contextPath + "/common/image/display.do?fileid=4EB8D3A8-5CAF-426D-B408-6BE320D35C2D";
 		img.src = 'http://skynet.skhynix.com.cn/plusware/main/popup/GetDataService.aspx?type=ORGUSERPROFILEIMG&empNum='+empId; 
+	},
+	/**
+	 * 에러이미지 객체
+	 * @param {String}	- 에러 이미지가 보여질 영역
+	 * @param {Integer}	- 에러 이미지 가로 크기
+	 * @param {Integer}	- 에러 이미지 세로 크기
+	 * @param {Object}	- 에러 이미지 객체
+	 * 		: w		- 가로 크기
+	 * 		: h		- 세로 크기
+	 * 		: src	- 이미지 경로
+	 * 		: style	- 이미지를 가운데로 위치시기기 위한 스타일 정보
+	 * 		: divW	- 이미지를 감싸고 있는 영역의 가로 크기
+	 * 		: divH	- 이미지를 감싸고 있는 영역의 세로 크기
+	 */
+	getErrImgObj : function(targetId, w, h) {
+		var src = contextPath + '/images/img_nf.png';
+		var style = '';
+		
+		var margin = 4;
+		var divW = 90;	// 이미지를 담고 있는 영역의 가로크기
+		var divH = 90;	// 이미지를 담고 있는 영역의 세로크기
+		// 만일, 대부분의 결재페이지등에서 사용할 영역이 image class를 가지고 있다면 가로크기와 세로 크기를 90X120으로 설정 
+		if ($("#"+targetId).attr("class") == "image") { divW = 90, divH = 120; }
+		
+		var sizeObj = CommonService._calcImageRatio(w, h, divW, divW);
+		var w = sizeObj.w - margin;	// 영역의 크기에 맞게 재 계산된 가로 크기
+		var h = sizeObj.h - margin;	// 영역의 크기에 맞게 재 계산된 세로 크기
+		
+		// 이미지의 중앙에 맞추기
+		if (divH > divW) style= 'style="margin-top:'+((divH-h)/2)+'px;"';
+		else style= 'style="margin-left:'+((divW-w)/2)+'px;"';
+		
+		return {w:w, h:h, src:src, style:style, divW:divW, divH:divH};
 	},
 	/**
 	 * eHR 시스템의 증명사진 다운로드
