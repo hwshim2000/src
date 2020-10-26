@@ -1,5 +1,4 @@
-/**
- * Element 이벤트 핸들러 서비스
+* Element 이벤트 핸들러 서비스
  * @author X0114723
  */
 jQuery.fn.extend({
@@ -593,10 +592,13 @@ var CommonService = {
 	makeThumbImageRatio : function(fileId, targetId, w, h, popupProps) {
 		if (!targetId) return;
 		var pDivObj = CommonService._resizePreviewDiv(targetId, w, h);
+		if (pDivObj && pDivObj.imageDivId) {
+			$("#"+pDivObj.imageDivId).text('');
+		}
 		if (!fileId) return;
 		
 		CommonService.getFileInfo(fileId, function(fileInfo) {
-			CommonService._makeThumbImageRatio(fileInfo, pDivObj.imageDivId, pDivObj.w, pDivObj.h, true, popupProps);
+			CommonService._makeThumbImageRatio(fileInfo, pDivObj.imageDivId, pDivObj.w, pDivObj.h, true, popupProps, true);
 		});
 	},
 	/**
@@ -605,10 +607,18 @@ var CommonService = {
 	 * @param {String} targetId		- 이미지가 보여질 영역의 ID
 	 * @param {Number} w			- thumbnail 가로 크기
 	 * @param {Number} h			- thumbnail 세로 크기
-	 * @param {String} popupProps	- 팝업윈도우 festures properties
 	 * @param {Boolean} popup		- 상세보기 팝업 여부
+	 * @param {String} popupProps	- 팝업윈도우 festures properties
+	 * @param {Boolean} isErrImg	- 에러 이미지를 보여줄지 여부
 	 */
-	_makeThumbImageRatio : function(fileInfo, targetId, w, h, popup, popupProps) {
+	_makeThumbImageRatio : function(fileInfo, targetId, w, h, popup, popupProps, isErrImg) {
+		if (!targetId) return;
+		var targetObj = $("#"+targetId);
+		targetObj.text('');
+		
+		if (!fileInfo) {
+			return;
+		}
 		var fileId = fileInfo.fileId;
 		var fileNm = fileInfo.fileNm;
 		var title = "Popup";
@@ -616,8 +626,7 @@ var CommonService = {
 		
 		var ratio = w / h;
 	
-		if (!targetId) return;
-		var targetObj = $("#"+targetId);
+		
 		//if (!targetObj || targetObj.length == 0) return;
 		
 		var thumbHtml = '';
@@ -625,6 +634,7 @@ var CommonService = {
 		if (popup) {
 			popupHtml = ' style="cursor:pointer" onclick="CommonService.imageView(\'' + fileId + '\', \'' + popupProps + '\');" alt="'+ title +'" title="'+ title +'"'; 
 		};
+		
 		
 		var img = new Image();
 		img.onload = function() {
@@ -636,9 +646,12 @@ var CommonService = {
 			targetObj.html(thumbHtml);
 		}
 		img.onerror = function() {
-			CommonService._fitImageDiv(targetId, w, h);
-			var src = contextPath + '/images/img_nf.png';
-			thumbHtml = '<img src="'+ src + '" width="'+ w + '" height="' + h + '" alt="No image" title="No image" />';
+			if (!isErrImg) return;
+			var imgObj = CommonService.getErrImgObj(targetId, w, h);
+			
+			CommonService._fitImageDiv(targetId, imgObj.divW, imgObj.divH);
+			thumbHtml = '<img src="'+ imgObj.src + '" width="'+ imgObj.w + '" height="' + imgObj.h + '" alt="No image" title="No image" '+imgObj.style+' />';
+			
 			targetObj.html(thumbHtml);
 		}
 		
@@ -690,8 +703,9 @@ var CommonService = {
 			targetObj.html(thumbHtml);
 		}
 		img.onerror = function() {
-			this.src = contextPath + '/images/img_nf.png';
-			thumbHtml = '<img src="'+ this.src + '" width="'+ width + '" height="' + height + '"/>';
+			var imgObj = CommonService.getErrImgObj(targetId, w, h);
+			
+			thumbHtml = '<img src="'+ imgObj.src + '" width="'+ imgObj.w + '" height="' + imgObj.h + '" '+imbObj.style+' />';
 			targetObj.html(thumbHtml);
 		}
 		
@@ -715,4 +729,23 @@ var CommonService = {
 	 */
 	makeImagePopupUrl : function(fileId, fileNm, popupProps) {
 		return '<a class="link2" onclick="CommonService.imageView(\'' + fileId + '\', \'' + popupProps + '\');return false;" title="Popup">'+fileNm+'</a>';
+	},
+	/**
+	 * 이미지 View URL
+	 * @param {String} fileId	- Image File ID
+	 * @param {String} targetId	- Image가 보여질 영역 ID
+	 * @param {Integer} w		- 이미지 최대 가로 크기
+	 * @param {Integer} h		- 이미지 최대 세로 크기
+	 * @param {Boolean} isErrImg - 에러이미지 보여주기 여부
+	 */
+	viewBoardImage : function(fileId, targetId, w, h, isErrImg) {
+		if (!fileId) return;
+		if (!w) w = 600;
+		if (!h) h = 900;
+		
+		if(typeof isErrImg === "undefined") isErrImg = true;
+		
+		CommonService.getFileInfo(fileId, function(fileInfo) {
+			CommonService._makeThumbImageRatio(fileInfo, targetId, w, h, false, null, isErrImg);
+		});
 	},
