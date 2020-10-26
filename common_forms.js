@@ -30,6 +30,8 @@ function CommonForms(action, method) {
 		
 		this.isNewForm = true;
 		
+		this._setPageSize();
+		
 		return this;
 	};
 	/**
@@ -42,6 +44,8 @@ function CommonForms(action, method) {
 		if (isForm) {
 			this.form = $("#"+id);
 			if (this.form) this.isNewForm = false;
+			
+			this._setPageSize();
 			
 			return this;
 		} else {
@@ -125,6 +129,9 @@ function CommonForms(action, method) {
 	this.setElement = function(name, val, type) {
 		if (this.form.find("input[name='"+name+"']").length > 0) {
 			this.form.find("input[name='"+name+"']").val(val);
+			return this;
+		} else if (this.form.find("select[name='"+name+"']").length > 0) {
+			this.form.find("select[name='"+name+"']").val(val);
 			return this;
 		} else {
 			return this.addElement(name, val, type);
@@ -226,9 +233,11 @@ function CommonForms(action, method) {
 	 * @return {Object}				- form object
 	 */
 	this.setReadOnly = function(excepts) {
+		var thisObj = this;
 		this.form.find("input[id],input[name],textarea[id],textarea[name],select[id],select[name]").each(function(){
 			if (!excepts || excepts.indexOf(this.name) < 0) {
-				$(this).attr("readonly", true);
+				//$(this).attr("readonly", true);
+				thisObj._readonly($(this), true);
 			}
 		});
 		
@@ -325,9 +334,8 @@ function CommonForms(action, method) {
         		//if (this.type == "number") $(this).val(0);
         		//else $(this).val('');
             } else {
-            	
             	$(this).val(map[key]);
-            	if (this.tagName === 'SELECT') $(this).change();
+            	//if (this.tagName === 'SELECT') $(this).change();
             }
         });
         find("input:radio").each(function () {
@@ -337,7 +345,7 @@ function CommonForms(action, method) {
             } else {
             	if (map[key] == this.value) {
             		$(this).prop("checked", true);
-            		$(this).change();
+            	//	$(this).change();
             	}
             }
         });
@@ -348,11 +356,11 @@ function CommonForms(action, method) {
             } else {
             	if (map[key] == 'Y') {
             		$(this).prop("checked", true);
-            		$(this).change();
+            		//$(this).change();
             	}
             }
         	if ($(this).prop("readonly")) {
-        		thisObj.readonlyCheckbox(key);
+        		thisObj._readonly($(this), true);
         	}
         });
     	if (enableText) {
@@ -360,21 +368,31 @@ function CommonForms(action, method) {
     			var elId = $(this).attr("id");
     			var val = data[$(this).attr("id")];
     			
-    			if (elId == "modBy" && data["modByNm"]) {
-    				val = data["modByNm"];
+    			if (elId == "modBy" && data["modByIdNm"]) {
+    				val = data["modByIdNm"];
     				//val = data["modByNm"] + "(" + val + ")";
-    			} else if (elId == "crtBy" && data["crtByNm"]) {
-    				val = data["crtByNm"];
+    			} else if (elId == "crtBy" && data["crtByIdNm"]) {
+    				val = data["crtByIdNm"];
     				//val = data["crtByNm"] + "(" + val + ")";
     			} 
 	       		
     			if (val || val == 0) {
-    				if ($(this).attr("viewType") === "html") $(this).html(val);
+    				var viewType = $(this).attr("viewType");
+    				if (viewType) {
+	    				if (viewType === "html") $(this).html(val);
+	    				else if (viewType === "pre" || viewType === "pre-wrap" || viewType === "pre-line") { 
+	    					$(this).html("<pre style='white-space:"+viewType+"'>"+val+"</pre>");
+	    				} else $(this).text(val);
+	    			} else $(this).text(val);
+    				
+    				/*if ($(this).attr("viewType") === "html") $(this).html(val);
     				else if ($(this).attr("viewType") === "pre") $(this).html("<pre>"+val+"</pre>");
-    				else $(this).text(val);
+    				else $(this).text(val);*/
     			}
 	        });
         }
+    	
+    	if (data && data.pageSize && $("#pageSize").length > 0) $("#pageSize").val(data.pageSize);
 
        /*  find("input:checkbox:checked,input:radio:checked").each(function () {
         	if (!(jQuery(this).attr("name") in map)) {
@@ -477,8 +495,8 @@ function CommonForms(action, method) {
     	for (var k in objs) {
     		elObj = $("#"+k, this.form);
     		elType = elObj.attr("type");
-    		if (elType === "radio" || elType === "checkbox") elObj.prop('checked', false).trigger('change');
-    		else elObj.val('').trigger('change');
+    		if (elType === "radio" || elType === "checkbox") elObj.prop('checked', false);//.trigger('change');
+    		else elObj.val('');//.trigger('change');
     	}
     };
     /**
@@ -505,6 +523,7 @@ function CommonForms(action, method) {
     	var newData = {};
     	if (data.sessUserId) newData['crtBy'] = data.sessUserId;
     	if (data.sessUserName) newData['crtByNm'] = data.sessUserName;
+    	if (data.sessUserId && data.sessUserName) newData['crtByIdNm'] = data.sessUserName + '(' + data.sessUserId + ')';
     	newData['crtDtm'] = new Date().format(this.dateFormat);
     	if (data.ip) newData['crtIp'] = data.ip;
     	
@@ -716,58 +735,103 @@ function CommonForms(action, method) {
 		});
 		return this;
 	},
-	/**
-	 * checkbox readonly 처리
-	 * @param {String} id	- readonly 할 checkbox id or name
-	 * @return {Object}				- Form Object
-	 */
-	this.readonlyCheckbox = function(id) {
-		var selector = "input[type=checkbox][name='"+id+"']";
-		var el = $(selector, this.form);
-		if (!el || el.length == 0) {
-			selector = "input[type=checkbox][id='"+id+"']";
-			el = $(selector, this.form);
+	this.readonlyElements = function(idArr, isReadonly, values, enableStyle) {
+		for (var i in idArr) {
+			this.readonlyElement(idArr[i], isReadonly, values, enableStyle);
 		}
-		if (!el || el.length == 0) return;
-		
-		if (this.form) {
-			//this.form.undelegate(selector, 'click');
-			//el.attr("readonly", "readonly");
-			this.form.delegate(selector, 'click', function(e) {
-		        e.preventDefault();
-		    });
-		} else {
-			//$('body').undelegate(selector, 'click');
-			//el.attr("readonly", "readonly");
-			$('body').delegate(selector, 'click', function(e) {
-		        e.preventDefault();
-		    });
-		}
-		
-		return this;
 	},
-	/**
-	 * checkbox readonly 해제 처리
-	 * @param {String} id	- readonly 해제할 checkbox id or name
-	 * @return {Object}				- Form Object
-	 */
-	this.releaseReadonlyCheckbox = function(id) {
-		var selector = "input[type=checkbox][name='"+id+"']";
+	this.readonlyElement = function(id, isReadonly, values, enableStyle) {
+		var elObj = $("[name='"+id+"']", this.form);
+		if (!elObj || elObj.length == 0) elObj = $("[id='"+id+"']", this.form);
+		if (!elObj || elObj.length == 0) return;
 		
-		var el = $(selector, this.form);
-		if (!el || el.length == 0) {
-			selector = "input[type=checkbox][id='"+id+"']";
-			el = $(selector, this.form);
-		}
-		if (!el || el.length == 0) return;
+		this._readonly(elObj, isReadonly, values, enableStyle);
+	},
+	this._readonly = function(elObj, isReadonly, values, enableStyle) {
+		var type = elObj.prop("type");
 		
-		if (this.form) {
-			this.form.undelegate(selector, 'click');
-		} else {
-			$('body').undelegate(selector, 'click');
-		}
+		if (!values) values = [];
+		else if (!$.isArray(values)) values = [values];
 		
-		return this;
+		var isContains = true;
+		
+		elObj.each(function() {
+			var el = $(this);
+			
+			if (typeof Filters !== "undefined") {
+				Filters._resetStyle(Filters._findElement(el.prop("uuid")));
+			}
+			
+			if (values.length == 0 || values.indexOf(el.val()) > -1) isContains = isReadonly;
+			else isContains = !isReadonly;
+			
+			if (isContains) {
+				el.prop("readonly", true);
+				if (enableStyle) el.addClass("nondisable");
+				el.on("click", function(e) { e.preventDefault(); el.blur();});
+			} else {
+				if (enableStyle) el.removeClass("nondisable");
+				el.removeProp("readonly");
+				el.off("click");
+			}
+			
+			if (!type || type === "text" || type === "password" || type === 'textarea') {
+				if (enableStyle) {
+					if (isContains) el.addClass("nondisable");
+					else el.removeClass("nondisable");
+				}
+			} else if (type === "radio") {
+				if (enableStyle) {
+					if (isContains) {
+						if (el.prop("checked")) el.next(".jqformRadio").addClass("readonly");
+						//if (el.next().next('label').css('color','#cccccc');
+					} else {
+						el.next(".jqformRadio").removeClass("readonly");
+						//el.next().next('label').css('color','');
+					}
+				}
+			} else if (type === "checkbox") {
+				if (enableStyle) {
+					if (isContains) {
+						if (el.prop("checked")) el.next(".jqformCheckbox").addClass("readonly");
+						//el.next().next('label').css('color','#cccccc');
+					} else {
+						el.next(".jqformCheckbox").removeClass("readonly");
+						//el.next().next('label').css('color','');
+					}
+				}
+			} else if (type.indexOf("select") == 0){
+				if (isContains) {
+					if (enableStyle) el.parent().addClass("nondisable");
+					//$("option", el).not(":selected").prop("disabled", true);
+					$("option", el).not(":selected").hide();
+				} else {
+					if (enableStyle) el.parent().removeClass("nondisable");
+					//$("option", el).not(":selected").removeProp("disabled");
+					$("option", el).not(":selected").show();
+				}
+			} else if (type === "file") {
+				if (enableStyle) {
+					if (isContains) {
+						if (el.is(":hidden")) {
+							$("input[name=dispFileName]", el.closest("td")).addClass("nondisable");
+							$("button", el.closest("td")).addClass("nondisable");
+							$(".photo>.image", el.closest("td")).css("background", "#F2F2F2");
+						} else {
+							el.addClass("nondisable");
+						}
+					} else {
+						if (el.is(":hidden")) {
+							$("input[name=dispFileName]", el.closest("td")).removeClass("nondisable");
+							$("button", el.closest("td")).removeClass("nondisable");
+							$(".photo>.image", el.closest("td")).css("background", "#FFFFFF");
+						} else {
+							el.removeClass("nondisable");
+						}
+					}
+				}
+			}
+		});
 	},
 	/**
 	 * 목록 페이지 번호 반환
@@ -798,6 +862,23 @@ function CommonForms(action, method) {
     	
 		return pageSize?pageSize:10;
     };
+    /**
+     * pageSize값이 현재 폼에 없는 경우, 현재 페이지의 pageSize값을 폼데이터에 설정한다.
+     */
+    this._setPageSize = function() {
+    	if ($("#pageSize").length > 0) {
+    		if (this.form.find("select[name='pageSize']").length == 0) {
+    			var el = $("#pageSize").clone();
+    			el.removeAttr("id");
+    			el.removeAttr("onchange");
+    			el.off("change");
+    			el.hide();
+	    		el.appendTo(this.form);
+	    	} else {
+	    		this.form.find("select[name='pageSize']").val( $("#pageSize").val());
+	    	}
+    	}
+    }
     /**
      * 폼 데이터 전송
      * @param {String} method	- 폼 데이터 전송 방식
