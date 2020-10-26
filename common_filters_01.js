@@ -1,20 +1,20 @@
-$(function() {
-	if (typeof Filters != "undefined") {
-		//var hintStyle = 'color: rgba(255,0,0,0.5); font-style:oblique;';
-		var hintStyle = 'color: #cccccc; font-style:oblique;';
-		$("head").append('<style>'
-					+ '::-webkit-input-placeholder { /* Edge */'
-					+ hintStyle
-					+ '}'
-					+ ':-ms-input-placeholder { /* Internet Explorer 10-11 */'
-					+ hintStyle
-					+ '}'
-					+ '::placeholder {'
-					+ hintStyle
-					+ '}'
-					+ '</style>');
-	}
-});
+//$(function() {
+//	if (typeof Filters != "undefined") {
+//		//var hintStyle = 'color: rgba(255,0,0,0.5); font-style:oblique;';
+//		var hintStyle = 'color: #cccccc; font-style:oblique;';
+//		$("head").append('<style>'
+//					+ '::-webkit-input-placeholder { /* Edge */'
+//					+ hintStyle
+//					+ '}'
+//					+ ':-ms-input-placeholder { /* Internet Explorer 10-11 */'
+//					+ hintStyle
+//					+ '}'
+//					+ '::placeholder {'
+//					+ hintStyle
+//					+ '}'
+//					+ '</style>');
+//	}
+//});
 /**
  * common_filters.js
  * @author	: hwshim
@@ -27,10 +27,9 @@ var Filters = {
 	defEssential: '<span class="essential"> *</span>',
 	defHint		: '<span style="color:#cccccc; font-style:oblique;">(#HINT#)</span>',
 	defTooltip	: '<div style="margin-top:-25px;border:1px solid #00AFFF;position:absolute;display:none;z-index:1000;background-color:#AED6F1;border-radius:3px;padding:3px;"></div>',
-	inputStyle	: 'rgba(255,0,0,0.1)',
-	validStyle	: 'rgba(50,100,255,0.1)',
-	previewHintStyle : '<textarea readonly style="background:rgba(255,255,255, 0);border:0;width:100%;height:100%;overflow:none;resize:none;" placeholder="#HINT#"></textarea>',
-	//validStyle	: "rgb(232,240,254)",
+	invalidStyle: 'rgba(255,0,0,0.1)',
+	previewHintStyle : '<textarea readonly disabled style="background:rgba(255,255,255, 0);border:0;width:100%;height:100%;overflow:hidden;resize:none;white-space:pre;" placeholder="#HINT#"></textarea>',
+	passwordHintStyle: '<span style="position:absolute;display:none;width:10px;height:18px;z-index:1000;color:blue;"></span>',
 	
 	/** 값이 비어있는지 체크 */
 	empty		: {
@@ -223,6 +222,17 @@ var Filters = {
 			en : 'Please enter a valid password ([capital+small+digits+special], #MINLEN#-#MAXLEN# chars)'
 		}
 	},
+	simple_passwd: {
+		vfilter : "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d]{#MINLEN#,}$",
+		lfilter : "^[A-Za-z\\d]{0,#MAXLEN#}$",
+		minLen	: 10,
+		maxLen 	: 20,
+		messages: {
+			ko : '올바른 비밀번호를 입력하세요.([대문자+소문자+숫자], #MINLEN#~#MAXLEN#자)',
+			zh : '请输入ID([大写+小写+数字], #MINLEN#~#MAXLEN#字)。',
+			en : 'Please enter a valid password ([capital+small+digits], #MINLEN#-#MAXLEN# chars)'
+		}
+	},
 	/** 이메일 체크 */
 	email		: {
 		//vfilter : "^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$",
@@ -325,7 +335,7 @@ var Filters = {
 	/** 중국어 체크 */
 	chinese	: {
 		vfilter : "^[0-9!@#$%^&*\?()\\-_=+\\\\\|\\[\\]{};:\\'\",.<>\\/? \\u4e00-\\u9fff]{#MINLEN#,}$",
-		lfilter : "^[0-9!@#$%^&*\?()\\-_=+\\\\\|\\[\\]{};:\\'\",.<>\\/? \\u4e00-\\u9fff]{0,#MAXLEN#}$",
+		//lfilter : "^[0-9!@#$%^&*\?()\\-_=+\\\\\|\\[\\]{};:\\'\",.<>\\/? \\u4e00-\\u9fff]{0,#MAXLEN#}$",
 		minLen	: 1,
 		maxLen 	: 50,
 		messages: {
@@ -361,7 +371,7 @@ var Filters = {
 	/** 중국어이름 체크 */
 	chn_name	: {
 		vfilter : "^[\\u4e00-\\u9fff]{#MINLEN#,}$",
-		lfilter : "^[\\u4e00-\\u9fff]{0,#MAXLEN#}$",
+		//lfilter : "^[u3000\\u3400-\\u4DBF\\u4e00-\\u9fff\\uF900-\\uFAFF]{0,#MAXLEN#}$",
 		minLen	: 1,
 		maxLen 	: 50,
 		messages: {
@@ -457,8 +467,8 @@ var Filters = {
 		vfilter : "^[a-zA-Z0-9]{#MINLEN#,}$",
 		lfilter : "^[a-zA-Z0-9]{0,#MAXLEN#}$",
 		messages: {
-			ko : '영문자 및 숫자를 입력하세요.([영문+숫자], #MINLEN# ~ #MAXLEN#자)',
-			zh : '请输入英文字母及数字。([英语+数字], #MINLEN# ~ #MAXLEN#字)',
+			ko : '영문자 및 숫자를 입력하세요.([영문|숫자], #MINLEN# ~ #MAXLEN#자)',
+			zh : '请输入英文字母及数字。([英语|数字], #MINLEN# ~ #MAXLEN#字)',
 			en : 'Please enter alphabetic characters and numbers.([alphabet|digits], #MINLEN#-#MAXLEN# chars)'
 		}
 	},
@@ -515,8 +525,6 @@ var Filters = {
 		var result = [];
 		for (var i in Filters._currElements) {
 			var el = Filters._currElements[i];
-			
-			console.log()
 			
 			// 같은 row에서 element 간의 미세한 높이 차이가 발생하므로 1의 자리를 모두 같게 해주기 위해
 			// (단, row의 pixel 높이가 10보다 크다는 전제가 필요함, 거의 대부분 10보다 크다)
@@ -577,6 +585,8 @@ var Filters = {
 			
 			if (!el.enableValueFilter()) continue;	// value filter enable하지 않으면 validation check를 하지 않는다.
 			if (exceptIds.indexOf(id) >= 0 || !filters) continue;	// 예외 element인 경우validation check 하지 않는다
+			if (el.prop("disabled")) continue;		// disabled form은 validation 체크를 하지 않는다.
+			//if (el.prop("readonly")) continue;		// readonly form은 validation 체크를 하지 않는다.
 			
 			required = filters.options.required;
 			value = el.val();
@@ -591,7 +601,7 @@ var Filters = {
 			if (filters.valueFilter) {
 				// validation을 체크
 				if (!filters.valueFilter.test(value)) {
-					Filters._setFileStyle(el, false);
+					Filters._fileValidStyle(el, false);
 					el.focus();
 					alert(filters.message);
 					return false;
@@ -610,7 +620,7 @@ var Filters = {
 				// [입력폼이 file인 경우 file size 범위 체크]
 				else if (filters.options.filter === 'file') {
 					if (!Filters._fileValidate(el, value)) {
-						Filters._setFileStyle(el, false);
+						Filters._fileValidStyle(el, false);
 						return false;
 					}
 				}
@@ -668,14 +678,20 @@ var Filters = {
 			if (!isChecked) {
 				el.focus();
 				alert(filters.message);
+				Filters._inputValidStyle(el, false);
 				return false;
+			} else {
+				Filters._inputValidStyle(el, true);
 			}
 		} else if (filter === 'select') {
 			if (!required) return true;
 			if (!value) {
 				el.focus();
+				Filters._inputValidStyle(el, false);
 				alert(filters.message);
 				return false;
+			} else {
+				Filters._inputValidStyle(el, true);
 			}
 		}
 		return true;
@@ -796,7 +812,7 @@ var Filters = {
 					
 					if (!isValidImage) {
 						alert(el._filters.message);
-						Filters._setFileStyle(el, false);
+						Filters._fileValidStyle(el, false);
 					};
 				}
 				img.onerror = function() {
@@ -810,21 +826,16 @@ var Filters = {
 	/**
 	 * 입력 배경 스타일과 입력 후 Validation결과에 따른 배경 스타일 적용
 	 * @param {Object}	el		- Element Object
-	 * @param {Boolean} isInput	- 입력(focus, input, change ...)인지 아닌지(blur) 여부
+	 * @param {Boolean} isValid	- valid인지 아닌지 여부
 	 */
-	_setInputAndValidStyle : function(el, isInput) {
-		if (!Filters.inputStyle && !Filters.validStyle) return;
-		
-		var inputStyle = Filters.inputStyle || '';
-		var validStyle = Filters.validStyle || '';
-		//var validStyle = "rgba(0,0,255,0.1)"; // rgb(232,240,254);
+	_inputValidStyle : function(el, isValid) {
+		if (!Filters.invalidStyle) return;
 		
 		var style = "";
-		
-		if (isInput) style = inputStyle;
-		else if (el.prop("isValid")) style = validStyle;
+		if (!isValid) style = Filters.invalidStyle;
 		
 		var filter = el._filters.options.filter;
+		
 		if (filter === 'radio') {
 			el.closest("td").find(".jqformRadioWrapper").css("background", style); //.css("padding", "2px");
 		} else if (filter === 'checkbox') {
@@ -832,25 +843,16 @@ var Filters = {
 		} else if (filter === 'file') {
 			el.css("background", style);	
 		} else el.css("background", style);
-		
-		/*if (filter === 'radio' || filter === 'checkbox' || filter === 'file') {
-			el.closest("td").css("background", style);	
-		} else  el.css("background", style); */
 	},
 	/**
 	 * 입력 배경 스타일과 입력 후 Validation결과에 따른 파일 element의 스타일 적용
 	 * @param {Object}	el		- File Element Object
 	 * @param {Boolean} isValid	- valid 여부
 	 */
-	_setFileStyle : function(el, isValid) {
-		if (typeof isValid === "undefined") isValid = el.prop("isValid");
-		el.prop("isValid", isValid);
-		if (!Filters.inputStyle && !Filters.validStyle) return;
+	_fileValidStyle : function(el, isValid) {
+		if (!Filters.invalidStyle) return;
 		
-		var inputStyle = Filters.inputStyle || '';
-		var validStyle = Filters.validStyle || '';
-		
-		var style = isValid?validStyle:inputStyle;
+		var style = isValid?'':Filters.invalidStyle;
 		var filter = el._filters.options.filter;
 		var varType = el._filters.options.varType;
 		
@@ -893,6 +895,34 @@ var Filters = {
 		} else el.css("background", "");
 	},
 	/**
+	 * element의 type이 비밀번호일 경우, 마지막 입력값을 보여주기 위한 설정
+	 * @param {Object} el		- form element
+	 */
+	_setPasswordHint : function(el) {
+		if (!Filters.passwordHintStyle) return;
+		if (el.prop("type") === 'password') {
+			el.passwordHint = $(Filters.passwordHintStyle);
+			//el.before(el.passwordHint);
+			$("body").append(el.passwordHint);
+		}
+	},
+	/**
+	 * element의 type이 비밀번호일 경우, 마지막 입력값 보여줌
+	 * @param {object} el		- form element
+	 * @param {String} value	- 입력값
+	 */
+	_showPasswordHint : function(el, value) {
+		if (!el.passwordHint) return;
+		var os = el.offset();					// password form top, left의 위치
+		el.passwordHint.finish().show();		// 새로운 입력일경우, animation을 중지하고 다시 보여줌.
+		el.passwordHint.css("top", os.top-1);	// 보여줄 top 위치
+		el.passwordHint.css("left", os.left+1); // 보여줄 left 위치
+		el.passwordHint.text(value.substring(value.length-1));	// 마지막 입력값
+		el.passwordHint.delay(500).fadeOut(500, '', function() {
+			$(this).text('');
+		});// 500mm초 유지후 500mm초간 fadeout
+	},
+	/**
 	 * 옵션에 맞는 필터를 등록하고, 메시지 포맷 설정
 	 * @param {Object} el		- form element
 	 * @param {Object} options {
@@ -921,8 +951,15 @@ var Filters = {
 		if (elType === "file") options.filter = "file"; 	// 파일폼이면 무조건 file 필터로 변경
 		else if (elType === "checkbox") { options.filter = "checkbox"; options.hintType = 'title'; }
 		else if (elType === "radio") { options.filter = "radio"; options.hintType = 'title'; }
-		else if (elTagName === "SELECT") { options.filter = "select"; options.hintType = 'title'; }
-		else if (elTagName === "TEXTAREA") options.filter = "textarea";	// textarea 영역은 무조건 textarea필터를 사용
+		else if (elType.indexOf("select") >= 0) { options.filter = "select"; options.hintType = 'title'; }
+		else if (elType === "textarea") options.filter = "textarea";	// textarea 영역은 무조건 textarea필터를 사용
+		else if (elType === 'password') {
+			el.bind('copy paste', function(e) {
+				e.preventDefault();
+			});
+			
+			Filters._setPasswordHint(el);
+		}
 		
 		var fObj = Filters[options.filter];	// 필터에 사용할 Regular Expression
 		var vf = fObj.vfilter || '';
