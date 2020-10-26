@@ -2,6 +2,125 @@
  * 팝업 유지 설정을 위한 Cookie 서비스
  * @author X0114723
  */
+
+/**
+ * Cookie & LocalStorage 서비스
+ * @returns
+ */
+var CookieService = {
+	type : 'C',				// C : Cookie 사용, L : LocalStorage 사용
+	tot_count : 0,			// 팝업 수
+	init_top : 0,			// 팝업 시작위치 : top
+	init_left : 0,			// 팝업 시작위치 : left
+	top_space : -10,		// 이전 팝업과의 top 간격(pixel)
+	left_space : 10,		// 이전 팝업과의 left 간격(pixel)
+	popup_interval : 1000,	// 팝업 오픈 간격(milliseconds)
+	
+	/**
+	 * @param type			- C : Cookie 사용, L : LocalStorage 사용
+	 * @params popupList	- 팝업 목록
+	 * @params callback		- 팝업 호출 콜백 함수
+	 * @params options		- 팝업 옵션
+	 * @returns
+	 */
+	init : function(type, popupList, callback, options) {
+		this.type = type?type:'C';
+		
+		if (!popupList || popupList.length == 0) return this;
+		var availList  = [];
+		
+		for (var i in popupList) {
+			if (CookieService.get(popupList[i].cookieId) != popupList[i].cookieVal) {
+				popupList[i].lang = LANG;
+				availList.push(popupList[i]);
+			}
+		}
+		this.tot_count = availList.length;
+		
+		if (this.tot_count == 0) return this;
+		if (!callback || typeof callback !== 'function') return this;
+		if (options && typeof options === 'object') {
+			if (options.top_space) this.top_space = options.top_space;
+			if (options.left_space) this.left_space = options.left_space;
+			if (options.popup_interval) this.popup_interval = options.popup_interval;
+		}
+		
+		// 팝업 목록 중간 부분이 화면의 중간에 팝업되도록 하기 위한 설정
+		// 간격값이 0 이면, 화면의 중앙에서 팝업
+		// (팝업수가 홀수 일 경우, 잴 처음 뜨는 팝업은 중간에 뜨는 팝업보다 (간격*(총 팝업수/2, 소숫점제외))의 간격만큼 떨어져서 오픈.
+		// ex) 팝업수 :3, 10(간격)*(3(팝업수)/2) - (10(간격)/2)*((3(팝업수)+1)%2) = 10*1-0, 즉, 첫번째는 중앙 위치보다  -10, 두번째는 중앙 0, 세번째는 + 10에 위치
+		// |-----|-----|,     |-----|-----|-----|-----|
+		//-10    0    10,	 -20   -10    0     10    20
+		// (팝업수가 짝수 일 경우, 잴 처음 뜨는 팝업은 중간에 뜨는 팝업보다 (간격*총 팝업수/2 - 간격/2)만큼 떨어져서 오픈.
+		// ex) 펍업수 :2, 10(간격)*(2(팝업수)/2) - (10(간격)/2)*((2(팝업수)+1)%2) = 10*1-5, 즉, 첫번째는 중앙 위치보다 -5, 두번째는 중앙+5에 위치
+		// |-----|,		|-----|-----|-----|
+		//-5  0  5,	   -15   -5  0  5     15
+		this.init_top = this.top_space * parseInt(this.tot_count/2) - (this.top_space/2)*((this.tot_count+1)%2);
+		this.init_left = this.left_space * parseInt(this.tot_count/2) - (this.left_space/2)*((this.tot_count+1)%2);
+		
+		// 팝업 interval을 주지 않을 경우, popup이 제대로 열리지 않는 경우 발생함.
+		for (var i in availList) {
+			availList[i].popupIndex = i;
+			if (this.popup_interval && this.popup_interval > 0) setTimeout(callback, i*this.popup_interval, availList[i]);
+			else callback(availList[i]);
+		}
+		
+		return this;
+	},
+	/**
+	 * 저장소에 데이터 저장
+	 * @param type			- C : Cookie 사용, L : LocalStorage 사용
+	 * @param name		- 저장키
+	 * @param value		- 저장값
+	 * @param expdays	- 저장소 보존 기간
+	 */
+	set : function(name, value, expdays) {
+		if (value && expdays && expdays > 0) {
+			if (this.type === 'C' || this.type === 'Cookie') Cookies.setCookie(name, value, expdays?expdays:1);
+			else LocalStorage.set(name, value, expdays?expdays:1);
+		}
+		return this;
+	},
+	/**
+	 * 저장된 데이터 조회
+	 * @param name		- 저장키
+	 */
+	get : function(name) {
+		if (this.type && this.type === 'C') return Cookies.getCookie(name);
+		else return LocalStorage.get(name);
+	},
+	/**
+	 * 팝업
+	 * @param url		- 팝업 url
+	 * @param options	- 팝업 옵션
+	 * @param params	- 전송 파라미터
+	 */
+	popup : function(url, name, options, params) {
+		if (!url) return;
+		if (!params) params = {};
+		if (!options) options = {};
+		
+		params.cookieType = this.type;// cookieType : C(Cookie), L(LocalStorage)
+		
+		options.space = {
+			top : params.popupIndex * this.top_space - this.init_top,		// 팝업 띄울때마다 top 간격
+			left : params.popupIndex * this.left_space - this.init_left	// 팝업 띄울때마다 left 간격
+		};
+		options.scrollbars = "yes";
+		
+		/*console.log('-----------------------------------------------')
+		console.log("screen W,H = ", screen.width, screen.height);
+		console.log("screen.avail W,H = ", screen.availWidth, screen.availHeight);
+		console.log("window.screen T,L = " , window.screenTop, window.screenLeft);
+		console.log("window.screen X,Y = ", window.screenX, window.screenY);
+		console.log("options : ", options);
+		console.log('-----------------------------------------------')*/
+		
+		CommonService.postPopup(url, name, options, params)
+		//CommonService.popup(popUrl, name, options);
+	}
+}
+
 var Cookies = {
 	/**
 	 * 쿠키 설정
@@ -10,9 +129,9 @@ var Cookies = {
 	 * @param {Number} exdays		- 쿠키 만료일(유지일수)
 	 */
 	setCookie : function(cookieName, value, exdays){
-	    var exdate = new Date();
+		var exdate = new Date();
 	    exdate.setDate(exdate.getDate() + exdays);
-	    var cookieValue = escape(value) + ((exdays==null) ? "" : "; expires=" + exdate.toGMTString());
+	    var cookieValue = escape(value) + ((exdays==null) ? "" : "; path=/; expires=" + exdate.toGMTString());
 	    document.cookie = cookieName + "=" + cookieValue;
 	},
 	/**
@@ -40,6 +159,7 @@ var Cookies = {
 	        if(end == -1)end = cookieData.length;
 	        cookieValue = cookieData.substring(start, end);
 	    }
+	    
 	    return unescape(cookieValue);
 	}
 }
