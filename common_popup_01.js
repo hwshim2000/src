@@ -99,6 +99,8 @@ var popupMenuSearchService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupMenuSearch";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -133,6 +135,8 @@ var popupMenuSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -207,8 +211,7 @@ var popupMenuSearchService = {
 						
 						$("a[name='"+$thisObj.popupId+"']").off("click").on("click", function(e){ //제목 
 							$thisObj.fnCallback(list[$(this).attr("value")]);
-							$thisObj.close();
-							
+							if ($thisObj.autoClose) $thisObj.close();
 							e.preventDefault();
 						});
 						
@@ -237,6 +240,8 @@ var popupBldgSearchService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupBldgSearch";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -270,6 +275,8 @@ var popupBldgSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -291,7 +298,7 @@ var popupBldgSearchService = {
 			gateArr.push(popupBldgSearchService.list[this.value]);
 		});
 		this.fnCallback(gateArr);
-		this.close();
+		if (this.autoClose) this.close();
 	},
 	/**
 	 * 팝업 데이터 조회 - 건물(구역)
@@ -362,7 +369,8 @@ var popupOrgSearchService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupOrgSearch";
 		this.pObj = $("#"+this.popupId);
-		
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		popupCommonService.setTreeStyle('popupOrgTreeDiv');
 		
@@ -390,6 +398,8 @@ var popupOrgSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		$("#popupOrgTree").html('');
@@ -402,7 +412,7 @@ var popupOrgSearchService = {
 		var checkedEmpId = this.pObj.find("input[name='CHECK_EMPID']:checked").val();
 		var empObj = this.empMap[checkedEmpId];
 		this.fnCallback(empObj);
-		this.close();
+		if (this.autoClose) this.close();
 	},
 	/**
 	 * 부서 클릭시 해당 부서의 구성원 조회
@@ -456,7 +466,7 @@ var popupOrgSearchService = {
  	 * @param {String} deptId	- 선택 부서
  	 */
  	expandDeptTree : function(deptId) {
- 		if (!deptId) return;
+ 		if (!deptId) return false;
  		// 트리여역
 		var treeObj = document.getElementById("popupOrgTreeDiv");
 		// 트리의 부서 폴더 이미지 아이콘
@@ -474,7 +484,7 @@ var popupOrgSearchService = {
 			/*if (LANG === 'ko') alert("존재하지 않는 부서이거나, 사용이 제한된 부서입니다. : " + deptId);
 			else if (LANG === 'en') alert("A department that does not exist or is restricted in use. : " + deptId);
 			else alert("不存在的部门或使用限制的部门。 : " + deptId);*/
-			return;
+			return false;
 		}
 		
 		// 선택 이미지 영역의 위치를 알아낸다.
@@ -497,6 +507,8 @@ var popupOrgSearchService = {
 		treeObj.scrollTop = lineHeight + treeObj.scrollTop - (treeObj.clientHeight/2 - diffOffsetH);
 		// 선택한 부서가 트리에서 잘 보이도록 스타일 변경
 		this.setDeptMenuStyle(deptId);
+		
+		return true;
 	},
 	/**
  	 * 클릭시 부서명 스타일 설정
@@ -629,6 +641,8 @@ var popupArticleSearchService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupArticleSearch";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -685,7 +699,7 @@ var popupArticleSearchService = {
         	popupArticleSearchService.$articleKndObj.val(kndNo);
         });
 		
-		console.log(searchParams) ;	// jbsun test
+		//console.log(searchParams) ;	// jbsun test
 		$("#popupArticleSearchForm").find("input[name=articleNm]").val(searchParams.articleNm) ;
 		CommonService.loadCodeList("G100", "articleKndNo", "", searchParams.articleKndNo, function() {	// jbsun : seearchParam 추가
 		//popupArticleSearchService.articleKndMap(function() {
@@ -707,6 +721,8 @@ var popupArticleSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -790,8 +806,7 @@ var popupArticleSearchService = {
 						
 						$("a[name='"+$thisObj.popupId+"']").off("click").on("click", function(e){ //제목 
 							$thisObj.fnCallback(list[$(this).attr("value")]);
-							$thisObj.close();
-							
+							if ($thisObj.autoClose) $thisObj.close();
 							e.preventDefault();
 						});
 						
@@ -870,6 +885,8 @@ var popupApprovalOrderService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupApprovalOrder";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -894,6 +911,8 @@ var popupApprovalOrderService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -909,7 +928,7 @@ var popupApprovalOrderService = {
 			checkedEmpObjs[inx+1] = popupApprovalOrderService.empMap[empId];
 		});
 		this.fnCallback(checkedEmpObjs);
-		this.close();
+		if (this.autoClose) this.close();
 	},
 	/**
 	 * 팝업 데이터 조회 - 결재 구성원 조회
@@ -955,16 +974,21 @@ var popupApprovalOrderService = {
 						 		+       '<span class="jqformCheckbox"></span>'
 						 		+     '</span>'
 						 		+   '</td>'
-						 		+   '<td scope="row">'+emp.empDispNm+'</td>'
-						 		+   '<td scope="row">'+emp.empId+'</td>'
+						 		+   '<td scope="row" name="apprEmpSel" value="'+emp.empId+'" style="cursor:pointer;">'+emp.empDispNm+'</td>'
+						 		+   '<td scope="row" name="apprEmpSel" value="'+emp.empId+'" style="cursor:pointer;">'+emp.empId+'</td>'
 			 					//+   '<td scope="row">'+emp.jcDispNm+'</td>'
 			 					//+   '<td scope="row">'+emp.jwCd+'</td>'
 			 					//+   '<td scope="row">'+emp.telNo+'</td>'
 			 					//+   '<td scope="row">'+emp.jwDispNm+'</td>'
 			 					+ '</tr>';
 					 }
-					 
+					
 					 $tblObj.html(rows); // 사원 선택 테이블 생성
+					 
+					 $("td[name='apprEmpSel']").on("click", function(e){ //관리번호
+						var checkedEmpId = $(this).attr("value");
+						$("input[name='CHECK_EMPID'][value=" + checkedEmpId + "]").click();
+					 });
 					 
 					 $tblObj.find("input[name='CHECK_EMPID']").off("change").on("change", function() {
 						$thisObj.appendOrRemoveEmpObj($thisObj.empMap[this.value], this.checked);
@@ -1071,6 +1095,8 @@ var popupPartnerSearchService = {
 	dialog : function(fnCallback, popupId, draggable, searchParams) {
 		this.popupId = popupId?popupId:"popupPartnerSearch";
 		this.pObj = $("#"+this.popupId);
+		this.autoClose = true;
+		if (searchParams && searchParams.hasOwnProperty('autoClose')) this.autoClose = searchParams.autoClose;
 		popupCommonService.init(this.pObj);
 		
 		if (draggable) {
@@ -1105,6 +1131,8 @@ var popupPartnerSearchService = {
 	 * 팝업 종료시 처리 함수
 	 */
 	close : function() {
+		if (!this.pObj.is(':visible')) return;
+		
 		popupCommonService.finalize();
 		this.pObj.hide();
 		this.pObj.find(".tblist_popup").html('');
@@ -1182,7 +1210,7 @@ var popupPartnerSearchService = {
 						
 						$("a[name='"+$thisObj.popupId+"']").off("click").on("click", function(e){ //제목 
 							$thisObj.fnCallback(list[$(this).attr("value")]);
-							$thisObj.close();
+							if ($thisObj.autoClose) $thisObj.close();
 							e.preventDefault();
 						});
 						
