@@ -42,7 +42,7 @@ jQuery.fn.extend({
 					if (!thisObj.enableValueFilter()) return true;
 					if (!filters.valueFilter) return true;
 					if (!filters.valueFilter.test(value)) {	// 파일명에 의한 확장자 패턴 체크
-						Filters._setFileStyle(thisObj, false);
+						Filters._fileValidStyle(thisObj, false);
 						thisObj.focus();
 						alert(Filters.toLocaleMessage(Filters.file.typeError));
 						
@@ -50,17 +50,21 @@ jQuery.fn.extend({
 					} else {
 						if (filters.options.varType && filters.options.varType != 'file') {
 							if (!Filters._fileValidate(thisObj, value)) {
-								Filters._setFileStyle(thisObj, false);
+								Filters._fileValidStyle(thisObj, false);
 								return false;
 							}
 						}
 					}
 					
-					Filters._setFileStyle(thisObj, true);
+					Filters._fileValidStyle(thisObj, true);
 					return true;
 				}
 			});
 		} else {
+			
+//			if (filters.options.filter === 'checkbox' || filters.options.filter === 'radio' || filters.options.filter === 'select') {
+//				return;
+//			}
 			// 이외의 모든 필터는 blur & input 필터를 사용한다.
 			this._blurInputFilter(function(value, type) {
 				if (type === "blur") {	// blur는 모든 입력이 끝났을때 발생
@@ -84,7 +88,7 @@ jQuery.fn.extend({
 						thisObj.val(Number(value));
 					}
 					// checkbox, radio, select form element check
-					if (!Filters._selectOrCheckTypeValidate(thisObj, value)) return false;
+					//if (!Filters._selectOrCheckTypeValidate(thisObj, value)) return false;
 					
 					thisObj._convertPhoneNo(filters.options.filter);	// 전화번호 형태 변환
 					
@@ -165,71 +169,186 @@ jQuery.fn.extend({
 			return filter.test(value);
 		});
 	},
+	readonly : function(isReadonly, values) {
+		this._readonly(this, isReadonly, values);
+	},
+	_readonly : function(elObj, isReadonly, values) {
+//		if (typeof Filters !== "undefined") {
+//			elObj = Filters._findElement(elObj.prop("uuid"));
+//			Filters._resetStyle(elObj);
+//		}
+		
+		var type = elObj.prop("type");
+		if (!values) values = [];
+		else if (!$.isArray(values)) values = [values];
+		
+		var isContains = true;
+		
+		elObj.each(function() {
+			var el = $(this);
+			
+			if (typeof Filters !== "undefined") {
+				Filters._resetStyle(Filters._findElement(el.prop("uuid")));
+			}
+			
+			if (values.length == 0 || values.indexOf(el.val()) > -1) isContains = isReadonly;
+			else isContains = !isReadonly;
+			
+			if (isContains) {
+				el.prop("readonly", true);
+				el.addClass("nondisable");
+				el.on("click", function(e) { e.preventDefault(); el.blur();});
+			} else {
+				el.removeClass("nondisable");
+				el.removeProp("readonly");
+				el.off("click");
+			}
+			
+			if (!type || type === "text" || type === "password" || type === 'textarea') {
+				if (isContains) el.addClass("nondisable");
+				else el.removeClass("nondisable");
+			} else if (type === "radio") {
+				if (isContains) {
+					if (el.prop("checked")) el.next(".jqformRadio").addClass("readonly");
+					el.next().next('label').css('color','#cccccc');
+				} else {
+					el.next(".jqformRadio").removeClass("readonly");
+					el.next().next('label').css('color','');
+				}
+			} else if (type === "checkbox") {
+				if (isContains) {
+					if (el.prop("checked")) el.next(".jqformCheckbox").addClass("readonly");
+					el.next().next('label').css('color','#cccccc');
+				} else {
+					el.next(".jqformCheckbox").removeClass("readonly");
+					el.next().next('label').css('color','');
+				}
+			} else if (type.indexOf("select") == 0){
+				if (isContains) {
+					el.parent().addClass("nondisable");
+					//$("option", el).not(":selected").prop("disabled", true);
+					$("option", el).not(":selected").hide();
+				} else {
+					el.parent().removeClass("nondisable");
+					//$("option", el).not(":selected").removeProp("disabled");
+					$("option", el).not(":selected").show();
+				}
+			} else if (type === "file") {
+				if (isContains) {
+					if (el.is(":hidden")) {
+						$("input[name=dispFileName]", el.closest("td")).addClass("nondisable");
+						$("button", el.closest("td")).addClass("nondisable");
+						$(".photo>.image", el.closest("td")).css("background", "#F2F2F2");
+					} else {
+						el.addClass("nondisable");
+					}
+				} else {
+					if (el.is(":hidden")) {
+						$("input[name=dispFileName]", el.closest("td")).removeClass("nondisable");
+						$("button", el.closest("td")).removeClass("nondisable");
+						$(".photo>.image", el.closest("td")).css("background", "#FFFFFF");
+					} else {
+						el.removeClass("nondisable");
+					}
+				}
+			}
+		});
+	},
 	/**
 	 * 입력폼들을 enable 시킨다.
 	 */
 	enable : function() {
-		var el = null;
-		if (typeof Filters !== "undefined") {
-			el = Filters._findElement(this.prop("uuid"));
-			Filters._resetStyle(el);
-		}
-		if (!el) el = this;
+		this._enable(this);
+	},
+	enableAll : function() {
+		$.each(this, function(index) {
+			$(this).enable();
+		});
+	},
+	_enable : function(elObj) {
+//		if (typeof Filters !== "undefined") {
+//			elObj = Filters._findElement(elObj.prop("uuid"));
+//			Filters._resetStyle(elObj);
+//		}
 		
-		var type = el.prop("type");
-		el.removeAttr("disabled");
+		var type = elObj.prop("type");
 		
-		if (!type || type === "text" || type === "password" || type === 'textarea') {
-			el.removeClass("nondisable");
-		} else if (type === "radio") {
-			//el.prop('checked', false);
-		} else if (type === "checkbox") {
-			//el.prop('checked', false);
-		} else if (type.indexOf("select") == 0){
-			el.parent().removeClass("nondisable");
-		} else if (type === "file") {
-			if (el.is(":hidden")) {
-				$("input[name=dispFileName]", el.closest("td")).removeClass("nondisable");
-				$("button", el.closest("td")).removeClass("nondisable");
-				$(".photo>.image", el.closest("td")).css("background", "#FFFFFF");
-			} else {
-				el.removeClass("nondisable");
+		elObj.each(function() {
+			var el = $(this);
+			
+			if (typeof Filters !== "undefined") {
+				Filters._resetStyle(Filters._findElement(el.prop("uuid")));
 			}
-		}
+		
+			el.removeProp("disabled");
+			
+			if (!type || type === "text" || type === "password" || type === 'textarea') {
+				el.removeClass("nondisable");
+			} else if (type === "radio") {
+				//el.prop('checked', false);
+			} else if (type === "checkbox") {
+				//el.prop('checked', false);
+			} else if (type.indexOf("select") == 0){
+				el.parent().removeClass("nondisable");
+			} else if (type === "file") {
+				if (el.is(":hidden")) {
+					$("input[name=dispFileName]", el.closest("td")).removeClass("nondisable");
+					$("button", el.closest("td")).removeClass("nondisable");
+					$(".photo>.image", el.closest("td")).css("background", "#FFFFFF");
+				} else {
+					el.removeClass("nondisable");
+				}
+			}
+		});
 	},
 	/**
 	 * 입력폼을 disable 시킨다.
 	 */
 	disable : function() {
-		var el = null;
-		if (typeof Filters !== "undefined") {
-			el = Filters._findElement(this.prop("uuid"));
-			Filters._resetStyle(el);
-		}
-		if (!el) el = this;
+		this._disable(this);
+	},
+	disableAll : function() {
+		$.each(this, function(index) {
+			$(this).disable();
+		});
+	},
+	_disable : function(elObj) {
+//		if (typeof Filters !== "undefined") {
+//			elObj = Filters._findElement(elObj.prop("uuid"));
+//			Filters._resetStyle(elObj);
+//		}
 		
-		var type = el.prop("type");
-		el.prop("disabled", true);
+		var type = elObj.prop("type");
 		
-		if (!type || type === "text" || type === "password" || type === 'textarea') {
-			el.val('');
-			el.addClass("nondisable");
-		} else if (type === "radio") {
-			el.prop('checked', false);
-		} else if (type === "checkbox") {
-			el.prop('checked', false);
-		} else if (type.indexOf("select") == 0){
-			el.val('');
-			el.parent().addClass("nondisable");
-		} else if (type === "file") {
-			if (el.is(":hidden")) {
-				$("input[name=dispFileName]", el.closest("td")).addClass("nondisable");
-				$("button", el.closest("td")).addClass("nondisable");
-				$(".photo>.image", el.closest("td")).css("background", "#F2F2F2");
-			} else {
-				el.addClass("nondisable");
+		elObj.each(function() {
+			var el = $(this);
+			
+			if (typeof Filters !== "undefined") {
+				Filters._resetStyle(Filters._findElement(el.prop("uuid")));
 			}
-		}
+		
+			el.prop("disabled", true);
+			
+			if (!type || type === "text" || type === "password" || type === 'textarea') {
+				el.val('');
+				el.addClass("nondisable");
+			} else if (type === "radio") {
+				el.prop('checked', false);
+			} else if (type === "checkbox") {
+				el.prop('checked', false);
+			} else if (type.indexOf("select") == 0){
+				el.val('');
+				el.parent().addClass("nondisable");
+			} else if (type === "file") {
+				if (el.is(":hidden")) {
+					$("input[name=dispFileName]", el.closest("td")).addClass("nondisable");
+					$("button", el.closest("td")).addClass("nondisable");
+					$(".photo>.image", el.closest("td")).css("background", "#F2F2F2");
+				} else {
+					el.addClass("nondisable");
+				}
+			}
+		});
 	},
 	/**
 	 * 키 입력에 따른 필터 환경 설정
@@ -271,54 +390,66 @@ jQuery.fn.extend({
 		var hintType = this._filters.hintType;
 		var hint = this._filters.hint;
 		
-		return this.on("input blur focus", function(e) {
-			e.preventDefault();
-			e.stopPropagation();
-			//if (e.type === 'keypress' && e.keyCode == 27) return;
-			
-			if (hintType === "tooltip") {
-				var offset = thisObj.offset();
-				if (e.type === "focus") Filters._tooltip.html(hint).css("top", offset.top).css("left", offset.left).show();
-				else if (e.type ==="blur") Filters._tooltip.hide();
-			} else if (hintType === "focus_only") {
-				if (e.type ==="focus") $(this).prop("placeholder", hint);
-				else if (e.type ==="blur") $(this).prop("placeholder", '');
-			}
-			//if (!this.value) return;
-			
-			if (e.type === "focus") this.isFocus = true;
-			else if (e.type === "input") this.isFocus = false;
-			
-			if (e.type == "blur") { Filters._setInputAndValidStyle(thisObj); }
-			else Filters._setInputAndValidStyle(thisObj, true);
-			
-			if (this.isFocus) return;
-			
-			var isValid = false;
-			
-			if (fnFilter(this.value, e.type)) {
-				this.oldValue = this.value;
-				this.oldSelectionStart = this.selectionStart;
-				this.oldSelectionEnd = this.selectionEnd;
+		if (this._filters.options.filter === 'checkbox' || this._filters.options.filter === 'radio' || this._filters.options.filter === 'select') {
+			return this.on("change", function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				Filters._inputValidStyle(thisObj, true);
+			});
+		} else {
+			return this.on("input blur focus", function(e) {
+				e.preventDefault();
+				e.stopPropagation();
 				
-				if (this.value) isValid = true;
-			} else if (this.hasOwnProperty("oldValue")) {
-				this.value = this.oldValue;
-				if (this.oldSelectionStart != null && this.oldSelectionEnd != null) {
-					this.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
+				// i.e인 경우 readonly라도 focus를 갖고 있는 문제(?)가 있다.
+				if (e.type != "blur" && thisObj.prop("readonly")) { thisObj.blur(); return; }
+				
+				if (hintType === "tooltip") {
+					var offset = thisObj.offset();
+					if (e.type === "focus") Filters._tooltip.html(hint).css("top", offset.top).css("left", offset.left).show();
+					else if (e.type ==="blur") Filters._tooltip.hide();
+				} else if (hintType === "focus_only") {
+					if (e.type ==="focus") $(this).prop("placeholder", hint);
+					else if (e.type ==="blur") $(this).prop("placeholder", '');
 				}
-			} else {
-				this.value = "";
-			}
-			
-			// --------------------------------
-			if (e.type === "blur") {
-				thisObj.prop("isValid", isValid);
-				Filters._setInputAndValidStyle(thisObj);
-			}
-			// --------------------------------
-			
-		});
+				
+				///////////////////////////////////////////////
+				
+				if (!this.value) return;
+				if (e.type === "focus") this.isInput = false;
+				else if (e.type === "input") this.isInput = true;
+				if (!this.isInput) return;
+				///////////////////////////////////////////////
+				
+				var isValid = false;
+				
+				if (fnFilter(this.value, e.type)) {
+					this.oldValue = this.value;
+					if (this.selectionStart) this.oldSelectionStart = this.selectionStart;
+					if (this.selectionEnd) this.oldSelectionEnd = this.selectionEnd;
+					
+					if (this.value) isValid = true;
+				} else if (this.hasOwnProperty("oldValue")) {
+					this.value = this.oldValue;
+					if (this.oldSelectionStart != null && this.oldSelectionEnd != null) {
+						this.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
+					}
+				} else {
+					this.value = "";
+				}
+				
+				// --------------------------------
+				if (e.type === "blur") {
+					Filters._inputValidStyle(thisObj, isValid);
+				} else {
+					if (isValid) {
+						Filters._showPasswordHint(thisObj, this.value);
+					}
+				}
+				// --------------------------------
+				
+			});
+		}
 	},
 	/**
 	 * File upload폼에 사용할 필터
@@ -328,32 +459,15 @@ jQuery.fn.extend({
 	_fileFilter : function(fnFilter) {
 		var thisObj = this;
 		return this.on("change", function(e) {
-			//if (!this.value)
-			thisObj.prop("isValid", false);
+			if (!this.value) return;
 			
 			if (!fnFilter(this.value, e.type)) {
 				e.preventDefault();
 				e.stopPropagation();
 				this.value = "";
-			} else thisObj.prop("isValid", true);
+			}
 		});
 	},
-	/*_fileFilter : function(fnFilter) {
-		var thisObj = this;
-		return this.on("change focus blur", function(e) {
-			if (e.type === "blur") Filters._setInputAndValidStyle(thisObj);
-			else if (e.type === "focus") Filters._setInputAndValidStyle(thisObj, true);
-
-			if (!this.value) thisObj.prop("isValid", false);
-			if (!this.value || e.type !== "change") return;
-			
-			if (!fnFilter(this.value, e.type)) {
-				e.preventDefault();
-				e.stopPropagation();
-				this.value = "";
-			} else thisObj.prop("isValid", true);
-		});
-	},*/
 	/**
 	 * 규칙이 없는 전화번호를 지정된 형식으로 변환
 	 * @param {String} filterType	- 전화번호 필터명
