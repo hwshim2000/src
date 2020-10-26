@@ -24,6 +24,8 @@ $(function() {
 		options.reqCount = _reqCount;
 		options.sendTime = new Date();
 		//console.log("[{0}] ajaxSending : {1}".format(options.reqCount, options.url.substring(options.url.lastIndexOf("/")+1)));
+		
+		xhr.setRequestHeader("AJAX", "true") ;	// jbsun : UserAuthInterceptor에서 ajax call 인지 판단하기 위해 필요
 	});
 
 	/**
@@ -45,17 +47,25 @@ $(function() {
 	 */
 	$(document).ajaxStop(function(event){
 		_glLoadingService.hide();
-		console.log("<<< ajaxStop");
+		
 		// 모든 ajax 호출 완료 후 아래 이름으로 정의된 Listener가 있는 경우 호출
-		if (GL_AjaxStopListener && typeof GL_AjaxStopListener === 'function') GL_AjaxStopListener(event);
+		if (GL_AjaxStopListener && typeof GL_AjaxStopListener === 'function') {
+			var result = GL_AjaxStopListener(event);
+			// 실행이 완료되면, ajax stop 이벤트로 인한 listener호출을 방지하기 위해 listener를 null처리한다.
+			// result가 있으면 listner를 null 처리하지 않는다.
+			if (!result) GL_AjaxStopListener = null;
+			console.log("<<< ajaxStop : ##### Call listener. #####");
+		} else {
+			console.log("<<< ajaxStop");
+		}
 	});
 	
 	/**
 	 * ajax error 발생시 호출.
 	 */
 	$(document).ajaxError(function(event, xhr, options){
-		if ( xhr.status == "401" || xhr.status == "403" ) {
-			// logout() ;
+		if ( xhr.status == "401" || xhr.status == "403" ) {	// jbsun : 세션이 만료됐을 경우 Interceptor에서 내려옴(401)
+			window.parent.location = contextPath + '/index.jsp' ;
 			return ;
 		}
 		
@@ -67,6 +77,40 @@ $(function() {
 		console.log( text ) ;
 	});
 	
+	/**
+	 * DB 입력 길이 재 계산
+	 * (MSSQL 입력시 줄바꿈 캐릭터의 길이계산 문제로 인한 maxlength 길이 재 계산)
+	 * @author : X0114723
+	 * @date : 2020-09-09
+	 */
+	$(document).ready(function(){
+		// ##########################################################################
+		// ### 줄바꿈 길이 계산시, textarea의 줄바꿈(\n)의 길이는 1로 인식, DB입력시 줄바꿈(\n\r)은 2로 인식
+		// ### 모든 texterea의 줄바꿈의 갯수(라인수 - 1)만큼을 더해서 maxlength와 비교를 한다.
+		// ##########################################################################
+		$("textarea[maxlength]").each(function(index, item) {
+			var maxLength = $(this).prop("maxlength");
+			
+			//var nameEl = $(this).closest("td").prev("th");// form에서 이름을 찾아낸다.
+			//var name = nameEl.text().replace('*','').trim();
+			//$(this).off("input").on("input", function() {
+			$(this).on("input", function() {
+				var lines = this.value.split('\n').length;
+				
+				if (!lines) lines = 0;
+				else lines--;	// 줄바꿈의 수는 전체 라인수 - 1
+				
+				//console.log(this.value.length, lines, maxLength);
+				if ( this.value.length + lines > maxLength ) {
+					//this.value = this.value.substring(0, maxLength-lines);	// 방법1. 현재값을 자르는 경우
+					this.value = this.oldValue || '';							// 방법2. 이전값을 복구하는 경우
+				} else {
+					this.oldValue = this.value;							// 방법2. 현재값 저장
+				}
+			});
+		});
+		// ##########################################################################
+    });
 });
 
 /**
@@ -526,6 +570,19 @@ var Common = {
 	},
 	
 	/**
+	 * yyyymmdd --> yyyy-mm-dd 형식으로 변환
+	 * @param {String} dateStr : 날짜 문자열 'yyyymmdd'
+	 * @return {String} 변환된 날짜 문자열 'yyyy-mm-dd'
+	 */
+	convertDateFormat : function(dateStr) {
+		if (dateStr && dateStr.length==8) {
+			return dateStr.substr(0, 4) + '-' + dateStr.substr(4, 2) + '-' + dateStr.substr(6, 2) ;
+		} else {
+			return '' ;
+		}
+	},
+	
+	/**
 	 * 스트링 널 체크 결과 리턴
 	 * @param {String} str
 	 */
@@ -750,6 +807,18 @@ var Common = {
 		return localeStr + ' ' + sizes[i];
 	},
 	/**
+	 * 국가코드가 중국계열의 나라인지 체크
+	 * @param {String} nationIid	- 국가코드
+	 * @return {Boolean}			- 중국계열여부
+	 */
+	isChineseLine : function(nationId) {
+		if (nationId == "1" || nationId == "9" || nationId == "27" || nationId == "31" ) {
+			return true;
+		} else {
+			return false;
+		}
+	},
+	/**
 	 * Url queryString을 json 객체로 반환
 	 * @param {String} str	- query string
 	 * @return {Object} 	- json object
@@ -857,6 +926,144 @@ var Common = {
 			isEdgeChromium	: isEdgeChromium,
 			isBlink			: isBlink
 		};
+	},
+	/**
+	 * Tooltip
+	 * @param {Object} obj		- element object
+	 * @param {Boolean} isShow	- 툴팁 여부
+	 */
+	tooltip : function(obj, isShow) {
+		var ttId = 'tooltipDiv';
+		var ttObj = $("#"+ttId);
+			
+		if (!ttObj || ttObj.length == 0) {
+			ttObj = $('<div id="'+ttId+'" class="tooltip"></div>');
+			$("body").append(ttObj);
+		}
+		
+		if (isShow) {
+			var h = 15;
+			//var ph = $(obj).parent().outerHeight();
+			//var h = $(obj).height();
+			//h = h + parseInt((ph-h)/2);
+			
+			var os = $(obj).offset();
+			ttObj.text($(obj).text()).css("top", os.top+h).css("left", os.left).show();
+		} else {
+			ttObj.text('').hide();
+		}
+	},
+	/**
+	 * 말줄임 표시
+	 * @param {String} text	- 내용
+	 * @return {String}		- 말줄임 및 Tooltip 표시를 위한 html
+	 */
+	ellipsis : function(text) {
+		return '<div class="text-ellipsis" onmouseover="Common.tooltip(this, true);" onmouseout="Common.tooltip(this, false);"><p>'+text+'</p></div>';
+		//return '<div class="text-ellipsis"><p title="'+text+'">'+text+'</p></div>'; 
+	},
+	/**
+	 * 상위부서를 포함한 부서 표시
+	 * @param {Object or String} obj	- 부서 Object 또는 상위부서명
+	 * @param {String} deptNm			- 부서명
+	 * @return {String}					- 상위부서를 포함한 부서명
+	 */
+	viewDeptNmUp : function(obj, deptNm) {
+		if (typeof obj === 'object') Common._nmUp(obj.upDeptDispNm, obj.deptDispNm);
+		else return Common._nmUp(obj, deptNm);
+	},
+	/**
+	 * 상위부서및 ID를 포함한 부서명 표시
+	 * @param {Object or String} obj	- 부서 Object 또는 상위부서명
+	 * @param {String} deptNm			- 부서명
+	 * @param {String} deptId			- 부서 ID
+	 * @return {String}					- 상위부서를 포함한 부서명
+	 */
+	viewDeptIdNmUp : function(obj, deptNm, deptId) {
+		if (typeof obj === 'object') return Common._idNmUp(obj.upDeptDispNm, obj.deptDispNm, obj.deptId);
+		else return Common._idNmUp(obj, deptNm, deptId);
+	},
+	/**
+	 * 구성원 ID를 포함한 구성원명 : "empDispNm(empId)"
+	 * @param {Object or String} obj	- 구성원 Object 또는 구성원명
+	 * @param {String} empId			- 구성원 ID
+	 * @return {String}					- 구성원 ID를 포함한 구성원명
+	 */
+	viewEmpIdNm : function(obj, empId) {
+		if (typeof obj === 'object') return Common._idNm(obj.empDispNm, obj.empId);
+		else return Common._idNm(obj, empId);
+	},
+	/**
+	 * 부서 ID를 포함한 부서명 : "deptDispNm(deptId)"
+	 * @param {Object or String} obj	- 부서 Object 또는 부서명
+	 * @param {String} deptId			- 부서 ID
+	 * @return {String}					- 부서 ID를 포함한 부서명
+	 */
+	viewDeptIdNm : function(obj, deptId) {
+		if (typeof obj === 'object') return Common._idNm(obj.deptDispNm, obj.deptId);
+		else return Common._idNm(obj, deptId);
+	},
+	/**
+	 * 소속(상위)계약업체를 포함한 업체명 표시
+	 * @param {Object or String} obj	- 업체 Object 또는 소속(상위)계약업체명
+	 * @param {String} partnerNm		- 업체명
+	 * @return {String}					- 소속(상위)계약업체를 포함한 업체명
+	 */
+	viewPartnerNmUp : function(obj, partnerNm) {
+		if (typeof obj === 'object') return Common._nmUp(obj.upPartnerNm, obj.partnerNm);
+		else return Common._nmUp(obj, partnerNm);
+	},
+	/**
+	 * 방문객 ID를 포함한 방문객명 : "visitorNm(visitorId)"
+	 * @param {Object or String} obj	- 방문객 Object 또는 방문객명
+	 * @param {String} visitorId		- 방문객 ID
+	 * @return {String}					- 방문객 ID를 포함한 방문객명
+	 */
+	viewVisitorIdNm : function(obj, visitorId) {
+		if (typeof obj === 'object') return Common._idNm(obj.visitorNm, obj.visitorId);
+		else return Common._idNm(obj, visitorId);
+	},
+	/**
+	 * 업체 ID를 포함한 업체명 : "partnerNm(partnerId)"
+	 * @param {Object or String} obj	- 업체 Object 또는 업체명
+	 * @param {String} partnerId		- 업체 ID
+	 * @return {String}					- 업체 ID를 포함한 업체명
+	 */
+	viewPartnerIdNm : function(obj, partnerId) {
+		if (typeof obj === 'object') return Common._idNm(obj.partnerNm, obj.partnerId);
+		else return Common._idNm(obj, partnerId);
+	},
+	/**
+	 * 업체 ID 및 계약업체를 를 포함한 업체명 : "upPartnerNm partnerNm(partnerId)"
+	 * @param {Object or String} obj	- 업체 Object 또는 계약업체명
+	 * @param {String} partnerNm		- 업체명
+	 * @param {String} partnerId		- 업체 ID
+	 * @return {String}					- 업체 ID를 포함한 업체명
+	 */
+	viewPartnerIdNmUp : function(obj, partnerNm, partnerId) {
+		if (typeof obj === 'object') return Common._idNmUp(obj.upPartnerNm, obj.partnerNm, obj.partnerId)
+		else return Common._idNmUp(obj, partnerNm, partnerId)
+	},
+	_idNmUp : function(upNm, nm, id) {
+		var sep = ' ';
+		upNm = upNm ? upNm + sep : '';
+		return upNm + Common._idNm(nm, id);
+	},
+	_idNm : function(nm, id) {
+		var viewNm = '';
+		nm = nm ? nm : '';
+		id = id ? id : '';
+		
+		if (nm) viewNm = nm;
+		if (id) viewNm +=  '(' + id + ')';
+		
+		return viewNm;
+	},
+	_nmUp : function(upNm, nm) {
+		var sep = ' ';
+		upNm = upNm ? upNm + sep : '';
+		nm = nm ? nm : '';
+		return upNm + nm;
 	}
 };
 
@@ -871,6 +1078,7 @@ var WebError = {
 	NO_DATA				: "2001",
 	UNAUTHORIZED		: "2002",
 	DUP_CAR_NO          : "2003",
+	DUP_DATA         	: "2006",
 	COMMON_INTERNAL		: "3000",
 	DB_OPERATION		: "3001",
 	FILE_OPERATION		: "3002",
