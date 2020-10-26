@@ -1,10 +1,10 @@
 var persisteduls=new Object()
 var ddtreemenu=new Object()
 
-ddtreemenu.closefolder = "/statics/images/tree_open.png"; //set image path to "closed" folder image
-ddtreemenu.openfolder  = "/statics/images/tree_close.png"; //set image path to "open" folder image
-ddtreemenu.listfolder  = "/statics/images/tree_folder.png"; //set image path to "open" folder image
-ddtreemenu.blankfolder	= "/statics/images/tree_blank.png";
+ddtreemenu.closefolder="/statics/images/closed.gif" //set image path to "closed" folder image
+ddtreemenu.openfolder="/statics/images/open.gif" //set image path to "open" folder image
+ddtreemenu.listfolder="/statics/images/list.gif" //set image path to "open" folder image
+ddtreemenu.blankfolder="/statics/images/tree_blank.png";
 
 //////////No need to edit beyond here///////////////////////////
 
